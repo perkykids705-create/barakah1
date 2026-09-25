@@ -358,17 +358,17 @@ export const AppShell: React.FC<AppShellProps> = ({
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end lg:hidden">
             <div className="bg-[#0B2E1C] rounded-t-3xl p-6 text-[#F3F0E4] max-h-[85vh] overflow-y-auto border-t-2 border-[#C89B2E]">
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#123D28]">
+              <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#123D28]">
                 <BrandMark variant="dark" size="sm" />
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 rounded-lg text-[#9FB6A3] hover:text-white"
+                  className="p-2 rounded-xl bg-[#123D28] text-[#9FB6A3] hover:text-white cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-6">
+              <div className="grid grid-cols-2 gap-2.5 mb-6">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -379,28 +379,30 @@ export const AppShell: React.FC<AppShellProps> = ({
                         setActiveTab(item.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl text-xs font-semibold transition-colors ${
-                        isActive ? 'bg-[#123D28] text-white border border-[#C89B2E]/60' : 'bg-[#0B2E1C] text-[#9FB6A3] border border-[#123D28]'
+                      className={`flex items-center gap-3 p-3.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#123D28] text-white border-2 border-[#C89B2E] shadow-md'
+                          : 'bg-[#0e3822] text-[#E1EFE4] hover:bg-[#123D28] border border-[#1b4b32]'
                       }`}
                     >
-                      <Icon className="w-4 h-4" style={{ color: item.glowColor }} />
+                      <Icon className="w-5 h-5 shrink-0" style={{ color: isActive ? item.glowColor : '#9FB6A3' }} />
                       <span className="truncate">{item.label}</span>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="pt-3 border-t border-[#123D28] flex items-center justify-between">
+              <div className="pt-4 border-t border-[#123D28] flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-white">{currentUser?.name}</p>
-                  <p className="text-[11px] text-[#9FB6A3]">{currentUser?.email}</p>
+                  <p className="text-sm font-extrabold text-white">{currentUser?.name}</p>
+                  <p className="text-xs text-[#9FB6A3] mt-0.5">{currentUser?.email}</p>
                 </div>
                 <button
                   onClick={() => {
                     signOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-red-900/40 text-red-200 text-xs font-medium border border-red-800"
+                  className="px-4 py-2 rounded-xl bg-red-900/50 hover:bg-red-900/80 text-red-200 text-xs font-bold border border-red-800 transition-colors cursor-pointer"
                 >
                   {t('signOut')}
                 </button>
@@ -416,7 +418,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       </div>
 
       {/* MOBILE BOTTOM NAV BAR (Fixed, #0B2E1C trust surface, min 56px tap target) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B2E1C] border-t border-[#123D28] px-2 py-1 shadow-2xl flex items-center justify-around h-16 safe-area-pb">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B2E1C] border-t border-[#123D28] px-2 py-2 shadow-2xl flex items-center justify-around h-18 safe-area-pb">
         {[
           { id: 'home' as ActiveTab, label: t('navHome'), icon: Home, glow: '#4ADE80' },
           { id: 'prayer' as ActiveTab, label: t('navPrayer'), icon: Clock, glow: '#4ADE80' },
@@ -430,21 +432,21 @@ export const AppShell: React.FC<AppShellProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex-1 min-h-[48px] flex flex-col items-center justify-center py-1 select-none transition-transform active:scale-95"
+              className="flex-1 min-h-[52px] flex flex-col items-center justify-center py-1 select-none transition-transform active:scale-95 cursor-pointer"
             >
               <div
-                className={`flex items-center justify-center w-10 h-7 rounded-full transition-all ${
-                  isActive ? 'bg-[#123D28]' : ''
+                className={`flex items-center justify-center w-11 h-7 rounded-full transition-all ${
+                  isActive ? 'bg-[#123D28] ring-1 ring-[#C89B2E]/50' : ''
                 }`}
               >
                 <Icon
                   className="w-5 h-5 transition-colors"
-                  style={{ color: isActive ? tab.glow : '#9FB6A3' }}
+                  style={{ color: isActive ? tab.glow : '#AEC1B1' }}
                 />
               </div>
               <span
-                className={`text-[10px] font-medium tracking-tight mt-0.5 ${
-                  isActive ? 'text-[#F3F0E4] font-bold' : 'text-[#9FB6A3]'
+                className={`text-xs font-bold tracking-tight mt-1 text-center transition-colors line-clamp-1 ${
+                  isActive ? 'text-white font-black' : 'text-[#AEC1B1]'
                 }`}
               >
                 {tab.label}
