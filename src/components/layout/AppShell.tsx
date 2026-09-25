@@ -304,8 +304,18 @@ export const AppShell: React.FC<AppShellProps> = ({
             </div>
           </div>
 
-          {/* Right Slot: Language Switcher & Profile CTA */}
+          {/* Right Slot: Language Switcher & Landing / Profile CTA */}
           <div className="flex items-center gap-2">
+            {/* Direct Link to Landing Page / Sign Out */}
+            <button
+              onClick={signOut}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#0B2E1C]/15 hover:border-red-300 hover:bg-red-50 text-xs font-bold text-stone-700 hover:text-red-600 shadow-xs transition-colors cursor-pointer"
+              title="Sign out & view Landing / Login / Sign-up page"
+            >
+              <LogOut className="w-3.5 h-3.5 text-stone-500" />
+              <span>{t('landingPageLabel') || 'Landing Page'}</span>
+            </button>
+
             {/* Language Switcher Dropdown */}
             <div className="relative">
               <button

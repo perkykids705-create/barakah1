@@ -266,61 +266,41 @@ export const SettingsModule: React.FC = () => {
             </div>
 
             {!isCustomMode ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* 1. Country with search */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs sm:text-sm font-bold text-[#5D6B5A]">
-                        1. {t('locationCountry')} ({countries.length} available)
-                      </label>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Filter countries..."
-                      value={countryFilter}
-                      onChange={(e) => setCountryFilter(e.target.value)}
-                      className="w-full px-3 py-1.5 mb-2 rounded-xl border border-stone-200 text-xs outline-none bg-white font-medium"
-                    />
-                    <select
-                      value={selectedCountry}
-                      onChange={(e) => handleCountryChange(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl border border-stone-300 outline-none bg-white text-sm sm:text-base font-bold text-stone-800 focus:ring-2 focus:ring-[#2E8B4F]/30"
-                    >
-                      {filteredCountries.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Country */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-[#5D6B5A] mb-1.5">
+                    {t('locationCountry')}
+                  </label>
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-300 outline-none bg-white text-sm sm:text-base font-bold text-stone-800 focus:ring-2 focus:ring-[#2E8B4F]/30 cursor-pointer"
+                  >
+                    {countries.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                  {/* 2. City with search */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs sm:text-sm font-bold text-[#5D6B5A]">
-                        2. {t('locationCity')} ({availableCities.length} in {selectedCountry})
-                      </label>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Filter cities..."
-                      value={cityFilter}
-                      onChange={(e) => setCityFilter(e.target.value)}
-                      className="w-full px-3 py-1.5 mb-2 rounded-xl border border-stone-200 text-xs outline-none bg-white font-medium"
-                    />
-                    <select
-                      value={selectedCity}
-                      onChange={(e) => setSelectedCity(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl border border-stone-300 outline-none bg-white text-sm sm:text-base font-bold text-stone-800 focus:ring-2 focus:ring-[#2E8B4F]/30"
-                    >
-                      {filteredCities.map((loc) => (
-                        <option key={loc.city} value={loc.city}>
-                          {loc.city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* City */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-[#5D6B5A] mb-1.5">
+                    {t('locationCity')}
+                  </label>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => setSelectedCity(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-300 outline-none bg-white text-sm sm:text-base font-bold text-stone-800 focus:ring-2 focus:ring-[#2E8B4F]/30 cursor-pointer"
+                  >
+                    {availableCities.map((loc) => (
+                      <option key={loc.city} value={loc.city}>
+                        {loc.city}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             ) : (

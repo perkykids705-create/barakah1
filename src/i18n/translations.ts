@@ -146,6 +146,10 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Settings & Landing
     accountSettings: 'Account Settings',
+    landingPageLabel: 'Landing Page',
+    createAccount: 'Create Your Account',
+    locationCountry: 'Country',
+    locationCity: 'City',
     calculationMethod: 'Calculation Method',
     asrMadhab: 'Asr Calculation (Juristic)',
     locationSettings: 'Location & Timezone',
@@ -281,6 +285,10 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Settings & Landing
     accountSettings: 'إعدادات الحساب',
+    landingPageLabel: 'الصفحة التعريفية',
+    createAccount: 'إنشاء حساب جديد',
+    locationCountry: 'الدولة',
+    locationCity: 'المدينة',
     calculationMethod: 'طريقة الحساب الفلكي',
     asrMadhab: 'مذهب حساب العصر',
     locationSettings: 'الموقع والمنطقة الزمنية',
@@ -416,6 +424,10 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Settings & Landing
     accountSettings: 'اکاؤنٹ سیٹنگز',
+    landingPageLabel: 'تعارفی صفحہ',
+    createAccount: 'نیا اکاؤنٹ بنائیں',
+    locationCountry: 'ملک',
+    locationCity: 'شہر',
     calculationMethod: 'اوقات کا حساب کتاب',
     asrMadhab: 'عصر کا مسلک',
     locationSettings: 'مقام و ٹائم زون',
@@ -551,6 +563,10 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Settings & Landing
     accountSettings: 'खाता सेटिंग्स',
+    landingPageLabel: 'लैंडिंग पेज',
+    createAccount: 'नया खाता बनाएँ',
+    locationCountry: 'देश',
+    locationCity: 'शहर',
     calculationMethod: 'गणना पद्धति',
     asrMadhab: 'असर की गणना (मज़हब)',
     locationSettings: 'स्थान व टाइमज़ोन',
@@ -686,6 +702,10 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Settings & Landing
     accountSettings: 'অ্যাকাউন্ট সেটিংস',
+    landingPageLabel: 'ল্যান্ডিং পেইজ',
+    createAccount: 'নতুন একাউন্ট তৈরি করুন',
+    locationCountry: 'দেশ',
+    locationCity: 'শহর',
     calculationMethod: 'গণনা পদ্ধতি',
     asrMadhab: 'আসর নামাজের ওয়াক্ত (মাজহাব)',
     locationSettings: 'স্থান ও সময় অঞ্চল',
