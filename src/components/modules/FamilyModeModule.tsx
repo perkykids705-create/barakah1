@@ -44,20 +44,20 @@ export const FamilyModeModule: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. HEADER */}
-      <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#2E8B4F]" />
-            <h2 className="text-2xl font-extrabold text-[#16241A]">{t('familyTitle')}</h2>
+          <div className="flex items-center gap-2.5">
+            <span className="w-3.5 h-3.5 rounded-full bg-[#2E8B4F]" />
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#16241A]">{t('familyTitle')}</h2>
           </div>
-          <p className="text-xs text-[#5D6B5A] mt-1">
+          <p className="text-sm sm:text-base text-[#5D6B5A] mt-1.5 max-w-xl">
             {t('familyDesc')}
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 rounded-xl bg-[#2E8B4F] hover:bg-[#257341] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs self-start md:self-center"
+          className="px-5 py-2.5 rounded-2xl bg-[#2E8B4F] hover:bg-[#257341] text-white font-extrabold text-sm flex items-center gap-2 transition-colors shadow-xs self-start md:self-center cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>{t('addFamilyProfile')}</span>
@@ -71,20 +71,20 @@ export const FamilyModeModule: React.FC = () => {
           return (
             <div
               key={member.id}
-              className={`rounded-3xl p-6 border transition-all ${
+              className={`rounded-3xl p-6 sm:p-7 border transition-all ${
                 isSelected
-                  ? 'bg-white border-[#2E8B4F] shadow-md ring-2 ring-[#2E8B4F]/20'
-                  : 'bg-white border-stone-200 shadow-xs'
+                  ? 'bg-white border-[#2E8B4F] shadow-lg ring-2 ring-[#2E8B4F]/20'
+                  : 'bg-white border-stone-200 shadow-xs hover:border-stone-300'
               }`}
             >
-              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#E1F2E7] text-[#2E8B4F] flex items-center justify-center font-bold text-base">
+              <div className="flex items-center justify-between pb-5 border-b border-stone-100">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-14 h-14 rounded-2xl bg-[#E1F2E7] text-[#2E8B4F] flex items-center justify-center font-black text-xl shadow-xs">
                     {member.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-[#16241A]">{member.name}</h4>
-                    <span className="text-[11px] text-[#5D6B5A] capitalize">
+                    <h4 className="text-lg font-extrabold text-[#16241A]">{member.name}</h4>
+                    <span className="text-xs sm:text-sm font-semibold text-[#5D6B5A] capitalize">
                       {member.relationship} ({member.ageGroup})
                     </span>
                   </div>
@@ -92,8 +92,8 @@ export const FamilyModeModule: React.FC = () => {
 
                 <button
                   onClick={() => setActiveFamilyMemberId(isSelected ? null : member.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
-                    isSelected ? 'bg-[#2E8B4F] text-white' : 'bg-stone-100 text-stone-700'
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer ${
+                    isSelected ? 'bg-[#2E8B4F] text-white shadow-xs' : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
                   }`}
                 >
                   {isSelected ? t('activeMode') : t('switchTo')}
@@ -101,16 +101,16 @@ export const FamilyModeModule: React.FC = () => {
               </div>
 
               {/* Progress Summary */}
-              <div className="grid grid-cols-2 gap-3 my-4">
-                <div className="p-3 rounded-xl bg-stone-50 border border-stone-100 text-center">
-                  <span className="text-[10px] text-[#5D6B5A] uppercase font-bold">{t('todayStreak')}</span>
-                  <p className="text-xl font-extrabold text-[#2E8B4F] mt-0.5 tabular-nums">
+              <div className="grid grid-cols-2 gap-3.5 my-5">
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-100 text-center">
+                  <span className="text-xs text-[#5D6B5A] uppercase font-bold tracking-wider">{t('todayStreak')}</span>
+                  <p className="text-2xl font-black text-[#2E8B4F] mt-1 tabular-nums">
                     {member.prayerStreak} {t('daysRemaining')}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-stone-50 border border-stone-100 text-center">
-                  <span className="text-[10px] text-[#5D6B5A] uppercase font-bold">{t('childQuranProgress')}</span>
-                  <p className="text-xl font-extrabold text-[#C89B2E] mt-0.5 tabular-nums">
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-100 text-center">
+                  <span className="text-xs text-[#5D6B5A] uppercase font-bold tracking-wider">{t('childQuranProgress')}</span>
+                  <p className="text-2xl font-black text-[#C89B2E] mt-1 tabular-nums">
                     {member.quranProgress} pgs
                   </p>
                 </div>
@@ -118,8 +118,8 @@ export const FamilyModeModule: React.FC = () => {
 
               {/* Today's Prayers Checklist */}
               <div>
-                <p className="text-xs font-bold text-[#5D6B5A] uppercase mb-2">{t('prayerCheckoff')}</p>
-                <div className="grid grid-cols-5 gap-1.5">
+                <p className="text-xs sm:text-sm font-extrabold text-[#5D6B5A] uppercase tracking-wider mb-2.5">{t('prayerCheckoff')}</p>
+                <div className="grid grid-cols-5 gap-2">
                   {prayersList.map((p) => {
                     const status = member.todayPrayers[p];
                     const isDone = status === 'on-time' || status === 'late';
@@ -133,14 +133,14 @@ export const FamilyModeModule: React.FC = () => {
                             status === 'on-time' ? 'late' : 'on-time'
                           )
                         }
-                        className={`p-2 rounded-xl text-center border transition-all text-xs font-bold ${
+                        className={`p-3 rounded-2xl text-center border transition-all cursor-pointer ${
                           isDone
-                            ? 'bg-[#E1F2E7] border-[#2E8B4F] text-[#2E8B4F]'
-                            : 'bg-stone-50 border-stone-200 text-stone-400'
+                            ? 'bg-[#E1F2E7] border-[#2E8B4F] text-[#2E8B4F] shadow-xs'
+                            : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-400'
                         }`}
                       >
-                        <span className="block text-[10px] uppercase font-bold">{t(p)}</span>
-                        <span className="text-sm mt-0.5 block">{isDone ? '✓' : '—'}</span>
+                        <span className="block text-xs uppercase font-extrabold">{t(p)}</span>
+                        <span className="text-base sm:text-lg font-black mt-1 block">{isDone ? '✓' : '—'}</span>
                       </button>
                     );
                   })}
@@ -154,31 +154,33 @@ export const FamilyModeModule: React.FC = () => {
       {/* 3. ADD MEMBER MODAL */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 lg:p-8 max-w-sm w-full space-y-4 shadow-2xl">
-            <h4 className="text-base font-bold text-[#16241A]">{t('addFamilyProfile')}</h4>
-            <p className="text-xs text-[#5D6B5A]">
-              {t('familyDesc')}
-            </p>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-5 shadow-2xl">
+            <div>
+              <h4 className="text-xl font-extrabold text-[#16241A]">{t('addFamilyProfile')}</h4>
+              <p className="text-xs sm:text-sm text-[#5D6B5A] mt-1">
+                {t('familyDesc')}
+              </p>
+            </div>
 
-            <form onSubmit={handleAddMember} className="space-y-4 text-xs font-semibold">
+            <form onSubmit={handleAddMember} className="space-y-4 text-sm font-semibold">
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('fullNameLabel')}</label>
+                <label className="block text-xs sm:text-sm text-[#5D6B5A] mb-1.5">{t('fullNameLabel')}</label>
                 <input
                   type="text"
                   placeholder={t('namePlaceholder')}
                   value={newMemberName}
                   onChange={(e) => setNewMemberName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-2.5 rounded-2xl border border-stone-200 outline-none focus:ring-2 focus:ring-[#2E8B4F]/30"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('relationshipLabel')}</label>
+                <label className="block text-xs sm:text-sm text-[#5D6B5A] mb-1.5">{t('relationshipLabel')}</label>
                 <select
                   value={newMemberRel}
                   onChange={(e) => setNewMemberRel(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none capitalize"
+                  className="w-full px-4 py-2.5 rounded-2xl border border-stone-200 outline-none capitalize focus:ring-2 focus:ring-[#2E8B4F]/30 bg-white"
                 >
                   <option value="child">{t('relChild')}</option>
                   <option value="spouse">{t('relSpouse')}</option>
@@ -187,11 +189,11 @@ export const FamilyModeModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('ageGroupLabel')}</label>
+                <label className="block text-xs sm:text-sm text-[#5D6B5A] mb-1.5">{t('ageGroupLabel')}</label>
                 <select
                   value={newMemberAge}
                   onChange={(e) => setNewMemberAge(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none capitalize"
+                  className="w-full px-4 py-2.5 rounded-2xl border border-stone-200 outline-none capitalize focus:ring-2 focus:ring-[#2E8B4F]/30 bg-white"
                 >
                   <option value="child">{t('ageChild')}</option>
                   <option value="teen">{t('ageTeen')}</option>
@@ -199,17 +201,17 @@ export const FamilyModeModule: React.FC = () => {
                 </select>
               </div>
 
-              <div className="pt-2 flex gap-2">
+              <div className="pt-2 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2 rounded-xl bg-stone-100 text-stone-700 font-bold"
+                  className="flex-1 py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm cursor-pointer transition-colors"
                 >
                   {t('cancelBtn')}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl bg-[#2E8B4F] text-white font-bold"
+                  className="flex-1 py-3 rounded-2xl bg-[#2E8B4F] hover:bg-[#257341] text-white font-extrabold text-sm cursor-pointer transition-colors shadow-xs"
                 >
                   {t('createProfileBtn')}
                 </button>

@@ -195,14 +195,14 @@ export const AppShell: React.FC<AppShellProps> = ({
 
         {/* Next Prayer Live Widget in Sidebar */}
         {nextPrayerInfo && (
-          <div className="mx-4 my-4 p-3.5 rounded-2xl bg-[#123D28] border border-[#C89B2E]/30 shadow-inner">
-            <div className="flex items-center justify-between text-xs text-[#9FB6A3] mb-1">
+          <div className="mx-4 my-4 p-4 rounded-2xl bg-[#123D28] border border-[#C89B2E]/40 shadow-inner">
+            <div className="flex items-center justify-between text-xs text-[#9FB6A3] font-bold mb-1">
               <span>{t('nextPrayer')}</span>
-              <span className="text-[#FBBF24] font-bold">{nextPrayerInfo.nextTime}</span>
+              <span className="text-[#FBBF24] font-extrabold">{nextPrayerInfo.nextTime}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-bold text-base text-[#F3F0E4]">{t(nextPrayerInfo.nextPrayer)}</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#0B2E1C] text-[#4ADE80]">
+              <span className="font-black text-base text-[#F3F0E4]">{t(nextPrayerInfo.nextPrayer)}</span>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#0B2E1C] text-[#4ADE80]">
                 {nextPrayerInfo.formattedCountdown} {t('timeRemaining')}
               </span>
             </div>
@@ -218,7 +218,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-sm font-bold transition-all duration-150 cursor-pointer ${
                   isActive
                     ? 'bg-[#123D28] text-[#F3F0E4] shadow-sm'
                     : 'text-[#9FB6A3] hover:text-[#F3F0E4] hover:bg-[#123D28]/60'
@@ -242,32 +242,32 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div className="p-4 border-t border-[#123D28] bg-[#0B2E1C]/90">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5 truncate">
-              <div className="w-8 h-8 rounded-full bg-[#123D28] border border-[#C89B2E] flex items-center justify-center text-xs font-bold text-[#FBBF24]">
+              <div className="w-9 h-9 rounded-full bg-[#123D28] border border-[#C89B2E] flex items-center justify-center text-sm font-black text-[#FBBF24] shrink-0">
                 {currentUser?.name.charAt(0) || 'U'}
               </div>
               <div className="truncate">
-                <p className="text-xs font-bold text-[#F3F0E4] truncate">
+                <p className="text-sm font-bold text-[#F3F0E4] truncate">
                   {currentFamilyMember ? `${currentFamilyMember.name} (Family)` : currentUser?.name}
                 </p>
-                <p className="text-[11px] text-[#9FB6A3] truncate">{currentUser?.email}</p>
+                <p className="text-xs text-[#9FB6A3] truncate">{currentUser?.email}</p>
               </div>
             </div>
             <button
               onClick={signOut}
               title={t('signOut')}
-              className="p-1.5 text-[#9FB6A3] hover:text-red-400 hover:bg-[#123D28] rounded-lg transition-colors"
+              className="p-2 text-[#9FB6A3] hover:text-red-400 hover:bg-[#123D28] rounded-xl transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
 
           {familyMembers.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-[#123D28]/60 flex items-center justify-between text-xs">
+            <div className="mt-2 pt-2 border-t border-[#123D28]/60 flex items-center justify-between text-xs font-semibold">
               <span className="text-[#9FB6A3]">{t('profileLabel')}:</span>
               <select
                 value={activeFamilyMemberId || ''}
                 onChange={(e) => setActiveFamilyMemberId(e.target.value || null)}
-                className="bg-[#123D28] text-xs text-[#F3F0E4] rounded-lg px-2 py-1 border border-[#C89B2E]/40 outline-none"
+                className="bg-[#123D28] text-xs font-bold text-[#F3F0E4] rounded-lg px-2.5 py-1 border border-[#C89B2E]/40 outline-none"
               >
                 <option value="">{currentUser?.name} ({t('relParent')})</option>
                 {familyMembers.map((m) => (
@@ -291,12 +291,12 @@ export const AppShell: React.FC<AppShellProps> = ({
               <BrandMark variant="light" size="sm" showWordmark={false} />
             </div>
             <div>
-              <h1 className="text-lg lg:text-xl font-extrabold text-[#16241A] tracking-tight">
+              <h1 className="text-lg lg:text-xl font-black text-[#16241A] tracking-tight">
                 {navItems.find((n) => n.id === activeTab)?.label || 'BarakahDaily'}
               </h1>
               {prayerTimes && (
-                <p className="text-[11px] text-[#5D6B5A] flex items-center gap-1.5">
-                  <span className="font-semibold text-[#0B2E1C]">{prayerTimes.date.hijriDate}</span>
+                <p className="text-xs text-[#5D6B5A] flex items-center gap-1.5 font-medium">
+                  <span className="font-bold text-[#0B2E1C]">{prayerTimes.date.hijriDate}</span>
                   <span className="text-stone-300">·</span>
                   <span>{currentUser?.location.city}, {currentUser?.location.country}</span>
                 </p>
@@ -310,19 +310,19 @@ export const AppShell: React.FC<AppShellProps> = ({
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#0B2E1C]/10 hover:border-[#0B2E1C]/30 text-xs font-semibold text-[#16241A] shadow-xs transition-colors"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#0B2E1C]/15 hover:border-[#0B2E1C]/30 text-xs sm:text-sm font-bold text-[#16241A] shadow-xs transition-colors cursor-pointer"
                 title={t('selectLanguage')}
               >
-                <Globe className="w-3.5 h-3.5 text-[#C89B2E]" />
+                <Globe className="w-4 h-4 text-[#C89B2E]" />
                 <span className="uppercase">{language}</span>
-                <ChevronDown className="w-3 h-3 text-[#5D6B5A]" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#5D6B5A]" />
               </button>
 
               {langMenuOpen && (
                 <div
-                  className={`absolute ${rtl ? 'left-0' : 'right-0'} mt-2 w-44 bg-white border border-[#0B2E1C]/15 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in duration-150`}
+                  className={`absolute ${rtl ? 'left-0' : 'right-0'} mt-2 w-48 bg-white border border-[#0B2E1C]/15 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in duration-150`}
                 >
-                  <p className="px-3 py-1 text-[10px] font-bold text-[#5D6B5A] uppercase tracking-wider">
+                  <p className="px-3.5 py-1 text-xs font-bold text-[#5D6B5A] uppercase tracking-wider">
                     {t('selectLanguage')}
                   </p>
                   {languages.map((l) => (
@@ -332,12 +332,12 @@ export const AppShell: React.FC<AppShellProps> = ({
                         setLanguage(l.code);
                         setLangMenuOpen(false);
                       }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#F7F4EC] transition-colors ${
-                        language === l.code ? 'font-bold text-[#2E8B4F] bg-[#E1F2E7]/40' : 'text-[#16241A]'
+                      className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm flex items-center justify-between hover:bg-[#F7F4EC] transition-colors cursor-pointer ${
+                        language === l.code ? 'font-extrabold text-[#2E8B4F] bg-[#E1F2E7]/40' : 'text-[#16241A] font-semibold'
                       }`}
                     >
                       <span>{l.label}</span>
-                      <span className="text-[11px] text-[#5D6B5A]">{l.native}</span>
+                      <span className="text-xs text-[#5D6B5A]">{l.native}</span>
                     </button>
                   ))}
                 </div>
@@ -347,7 +347,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-white border border-[#0B2E1C]/10 text-[#0B2E1C] hover:bg-[#E1F2E7] transition-colors"
+              className="lg:hidden p-2 rounded-xl bg-white border border-[#0B2E1C]/10 text-[#0B2E1C] hover:bg-[#E1F2E7] transition-colors cursor-pointer"
             >
               <Menu className="w-5 h-5" />
             </button>

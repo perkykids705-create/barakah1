@@ -134,45 +134,45 @@ export const RamadanModule: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA] animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-200">
+              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-purple-200">
                 {t('ramadanTitle')} · {t('ramadanDailyAnchor')}
               </span>
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight font-serif text-white">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-serif text-white">
               {t('ramadanBannerTitle')}
             </h2>
-            <p className="text-xs text-purple-200 mt-1">
+            <p className="text-sm sm:text-base text-purple-200 mt-1 font-medium">
               {t('ramadanBannerDesc')}
             </p>
           </div>
 
           {/* Suhoor & Iftar Cards */}
-          <div className="flex items-center gap-3">
-            <div className="p-3.5 rounded-2xl bg-white/10 border border-white/20 text-center min-w-[130px]">
-              <span className="text-[10px] uppercase font-bold text-purple-200 block">
+          <div className="flex items-center gap-3.5">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white/10 border border-white/20 text-center min-w-[140px] shadow-sm">
+              <span className="text-xs sm:text-sm uppercase font-bold text-purple-200 block">
                 {t('suhoorEnds')}
               </span>
-              <p className="text-2xl font-extrabold mt-1 text-white tabular-nums">
+              <p className="text-2xl sm:text-3xl font-black mt-1 text-white tabular-nums">
                 {prayerTimes ? prayerTimes.Fajr : '05:12'}
               </p>
-              <span className="text-[10px] text-amber-300 font-semibold">{t('stopEatingBefore')}</span>
+              <span className="text-xs text-amber-300 font-semibold">{t('stopEatingBefore')}</span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#C89B2E]/20 border border-[#C89B2E]/60 text-center min-w-[130px]">
-              <span className="text-[10px] uppercase font-bold text-amber-200 block">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#C89B2E]/25 border border-[#C89B2E]/70 text-center min-w-[140px] shadow-sm">
+              <span className="text-xs sm:text-sm uppercase font-bold text-amber-200 block">
                 {t('iftarTime')}
               </span>
-              <p className="text-2xl font-extrabold mt-1 text-[#FBBF24] tabular-nums">
+              <p className="text-2xl sm:text-3xl font-black mt-1 text-[#FBBF24] tabular-nums">
                 {prayerTimes ? prayerTimes.Maghrib : '18:45'}
               </p>
-              <span className="text-[10px] text-emerald-300 font-semibold">{t('breakFastAtAdhan')}</span>
+              <span className="text-xs text-emerald-300 font-semibold">{t('breakFastAtAdhan')}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* 2. SUB-NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 pb-3">
+      <div className="flex flex-wrap items-center gap-2.5 border-b border-stone-200 pb-3">
         {[
           { id: 'grid' as const, label: t('tab30DayGrid') },
           { id: 'taraweeh' as const, label: t('tabTaraweeh') },
@@ -185,10 +185,10 @@ export const RamadanModule: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors ${
+            className={`px-4.5 py-2.5 rounded-2xl text-sm sm:text-base font-extrabold transition-all cursor-pointer ${
               activeSubTab === tab.id
                 ? 'bg-[#5B3FA8] text-white shadow-xs'
-                : 'text-[#5D6B5A] hover:bg-stone-100'
+                : 'text-stone-600 hover:bg-stone-100'
             }`}
           >
             {tab.label}
@@ -196,7 +196,7 @@ export const RamadanModule: React.FC = () => {
         ))}
       </div>
 
-      {/* 3. SUBTAB 1: 30-DAY RAMADAN TRACKER GRID (PRD §4.5: Large filled squares min 40px mobile) */}
+      {/* 3. SUBTAB 1: 30-DAY RAMADAN TRACKER GRID */}
       {activeSubTab === 'grid' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs relative overflow-hidden">
@@ -204,27 +204,27 @@ export const RamadanModule: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-xl font-extrabold text-[#16241A]">{t('fastingTrackerGrid')}</h3>
-                <p className="text-xs text-[#5D6B5A]">
+                <h3 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('fastingTrackerGrid')}</h3>
+                <p className="text-sm sm:text-base text-stone-600 font-medium">
                   {t('fastingGridHint')}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1.5 font-semibold text-[#16241A]">
-                  <span className="w-3 h-3 rounded-md bg-[#2E8B4F]" /> {t('fastedStatus')}
+              <div className="flex items-center gap-4 text-sm font-semibold text-[#16241A]">
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#2E8B4F]" /> {t('fastedStatus')}
                 </span>
-                <span className="flex items-center gap-1.5 font-semibold text-[#16241A]">
-                  <span className="w-3 h-3 rounded-md bg-[#E0A526]" /> {t('excusedStatus')}
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#E0A526]" /> {t('excusedStatus')}
                 </span>
-                <span className="flex items-center gap-1.5 font-semibold text-[#16241A]">
-                  <span className="w-3 h-3 rounded-md bg-stone-200" /> {t('pendingStatus')}
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-md bg-stone-300" /> {t('pendingStatus')}
                 </span>
               </div>
             </div>
 
             {/* 30-Day Heatmap Grid */}
-            <div className="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-10 gap-2.5">
+            <div className="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-10 gap-3">
               {ramadanDays.map((day) => {
                 const isFasted = day.fasted === 'yes';
                 const isExcused = day.fasted === 'excused';
@@ -236,24 +236,24 @@ export const RamadanModule: React.FC = () => {
                       const nextStatus = day.fasted === 'yes' ? 'excused' : day.fasted === 'excused' ? 'no' : 'yes';
                       updateRamadanDay(day.day, { fasted: nextStatus });
                     }}
-                    className={`min-h-[64px] min-w-[40px] rounded-2xl p-2 flex flex-col justify-between items-center cursor-pointer border transition-all select-none ${
+                    className={`min-h-[72px] min-w-[48px] rounded-2xl p-2.5 flex flex-col justify-between items-center cursor-pointer border-2 transition-all select-none ${
                       isFasted
                         ? 'bg-[#E1F2E7] border-[#2E8B4F] text-[#0B2E1C] shadow-xs'
                         : isExcused
                         ? 'bg-[#FAF0D8] border-[#E0A526] text-amber-900'
-                        : 'bg-stone-50 border-stone-200 hover:border-stone-300 text-stone-600'
+                        : 'bg-stone-50 border-stone-200 hover:border-stone-400 text-stone-700'
                     }`}
                   >
-                    <span className="text-[11px] font-bold">D{day.day}</span>
-                    <span className="text-[10px] font-semibold">
+                    <span className="text-xs sm:text-sm font-black">D{day.day}</span>
+                    <span className="text-xs sm:text-sm font-extrabold">
                       {isFasted ? '✓' : isExcused ? 'Ex' : '—'}
                     </span>
                     <div className="flex items-center gap-1 mt-1">
                       {day.taraweehAttended && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#5B3FA8]" title="Taraweeh" />
+                        <span className="w-2 h-2 rounded-full bg-[#5B3FA8]" title="Taraweeh" />
                       )}
                       {day.charityGiven > 0 && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#C1541F]" title="Charity" />
+                        <span className="w-2 h-2 rounded-full bg-[#C1541F]" title="Charity" />
                       )}
                     </div>
                   </div>
@@ -267,29 +267,29 @@ export const RamadanModule: React.FC = () => {
       {/* 4. SUBTAB 2: TARAWEEH TRACKER */}
       {activeSubTab === 'taraweeh' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs">
-            <h4 className="text-base font-bold text-[#16241A] mb-4">{t('logTaraweehNight')}</h4>
-            <form onSubmit={handleAddTaraweeh} className="space-y-4 text-xs font-semibold">
+          <div className="lg:col-span-1 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs">
+            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5">{t('logTaraweehNight')}</h4>
+            <form onSubmit={handleAddTaraweeh} className="space-y-4">
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('mosqueAttended')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('mosqueAttended')}</label>
                 <input
                   type="text"
                   placeholder={t('mosquePlaceholder')}
                   value={tarMosque}
                   onChange={(e) => setTarMosque(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('rakahsCompleted')}</label>
-                <div className="grid grid-cols-2 gap-2">
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('rakahsCompleted')}</label>
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setTarRakahs(8)}
-                    className={`py-2 rounded-xl border font-bold ${
-                      tarRakahs === 8 ? 'bg-[#5B3FA8] text-white' : 'bg-stone-50'
+                    className={`py-3 rounded-xl border font-bold text-sm sm:text-base cursor-pointer ${
+                      tarRakahs === 8 ? 'bg-[#5B3FA8] text-white' : 'bg-stone-50 border-stone-200 text-stone-700'
                     }`}
                   >
                     {t('rakahs8')}
@@ -297,8 +297,8 @@ export const RamadanModule: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setTarRakahs(20)}
-                    className={`py-2 rounded-xl border font-bold ${
-                      tarRakahs === 20 ? 'bg-[#5B3FA8] text-white' : 'bg-stone-50'
+                    className={`py-3 rounded-xl border font-bold text-sm sm:text-base cursor-pointer ${
+                      tarRakahs === 20 ? 'bg-[#5B3FA8] text-white' : 'bg-stone-50 border-stone-200 text-stone-700'
                     }`}
                   >
                     {t('rakahs20')}
@@ -307,49 +307,49 @@ export const RamadanModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('juzCoveredNight')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('juzCoveredNight')}</label>
                 <input
                   type="number"
                   min="1"
                   max="30"
                   value={tarJuz}
                   onChange={(e) => setTarJuz(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('imamNotes')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('imamNotes')}</label>
                 <input
                   type="text"
                   placeholder={t('imamNotesPlaceholder')}
                   value={tarNotes}
                   onChange={(e) => setTarNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base outline-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-[#5B3FA8] text-white font-bold text-xs uppercase"
+                className="w-full py-3.5 rounded-2xl bg-[#5B3FA8] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider cursor-pointer shadow-xs"
               >
                 {t('recordTaraweeh')}
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs">
-            <h4 className="text-base font-bold text-[#16241A] mb-4">{t('taraweehHistory')}</h4>
-            <div className="space-y-3">
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs">
+            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5">{t('taraweehHistory')}</h4>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
               {taraweehLogs.map((log) => (
-                <div key={log.id} className="p-4 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-between">
+                <div key={log.id} className="p-4 sm:p-4.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-[#16241A]">{log.mosque}</p>
-                    <p className="text-xs text-[#5D6B5A] mt-0.5">
+                    <p className="text-base font-bold text-[#16241A]">{log.mosque}</p>
+                    <p className="text-xs sm:text-sm text-stone-600 font-medium mt-0.5">
                       {log.rakahs} {t('rakahs')} · {t('juzParaLabel')} {log.juzCovered} {log.notes && `· "${log.notes}"`}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-[#5B3FA8] bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                  <span className="text-xs sm:text-sm font-bold text-[#5B3FA8] bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200">
                     {log.date}
                   </span>
                 </div>
@@ -364,48 +364,48 @@ export const RamadanModule: React.FC = () => {
         <div className="space-y-6">
           {/* Dua card */}
           <div className="bg-[#0B2E1C] text-[#F3F0E4] rounded-3xl p-6 lg:p-8 border border-[#C89B2E] shadow-xl text-center space-y-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#FBBF24]">
+            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-[#FBBF24]">
               {t('laylatulQadrTitle')}
             </span>
-            <p className="text-2xl lg:text-3xl font-arabic leading-relaxed text-[#FAF0D8]">
+            <p className="text-3xl lg:text-4xl font-arabic leading-relaxed text-[#FAF0D8]">
               اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي
             </p>
-            <p className="text-xs italic text-[#9FB6A3]">
+            <p className="text-sm italic text-[#C5E1D0] font-medium">
               Allahumma innaka 'afuwwun tuhibbul-'afwa fa'fu 'anni
             </p>
-            <p className="text-sm font-medium text-[#F3F0E4] max-w-xl mx-auto">
+            <p className="text-base sm:text-lg font-medium text-[#F3F0E4] max-w-xl mx-auto leading-relaxed">
               "{t('laylatulQadrDua')}"
             </p>
           </div>
 
           {/* Odd Nights Checklist & I'tikaf Toggle */}
-          <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
-                <h4 className="text-lg font-bold text-[#16241A]">{t('oddNightsTitle')}</h4>
-                <p className="text-xs text-[#5D6B5A]">{t('seekNightDesc')}</p>
+                <h4 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('oddNightsTitle')}</h4>
+                <p className="text-sm sm:text-base text-stone-600 font-medium">{t('seekNightDesc')}</p>
               </div>
 
               {/* I'tikaf mode toggle */}
               <button
                 onClick={() => setItikafModeActive(!itikafModeActive)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-2xl text-sm font-bold border transition-colors flex items-center gap-2 cursor-pointer ${
                   itikafModeActive
                     ? 'bg-[#0B2E1C] text-[#FBBF24] border-[#C89B2E]'
-                    : 'bg-stone-100 text-[#5D6B5A] border-stone-200'
+                    : 'bg-stone-100 text-stone-700 border-stone-200'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-4 h-4" />
                 <span>{t('itikafMode')}: {itikafModeActive ? t('itikafActive') : t('itikafOff')}</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3.5">
               {oddNights.map((night) => (
-                <div key={night} className="p-4 rounded-xl border border-purple-200 bg-purple-50 text-center">
-                  <span className="text-xs font-bold text-purple-900">{t('dayNumber')} {night}</span>
-                  <p className="text-lg font-extrabold text-[#5B3FA8] mt-1">{t('oddNightLabel')}</p>
-                  <p className="text-[10px] text-purple-700 mt-2">{t('specialQiyamIstighfar')}</p>
+                <div key={night} className="p-5 rounded-2xl border-2 border-purple-200 bg-purple-50/70 text-center">
+                  <span className="text-xs sm:text-sm font-extrabold text-purple-900 uppercase tracking-wider">{t('dayNumber')} {night}</span>
+                  <p className="text-xl font-black text-[#5B3FA8] mt-1">{t('oddNightLabel')}</p>
+                  <p className="text-xs text-purple-700 font-semibold mt-2">{t('specialQiyamIstighfar')}</p>
                 </div>
               ))}
             </div>
@@ -416,81 +416,81 @@ export const RamadanModule: React.FC = () => {
       {/* 6. SUBTAB 4: IFTAR MEAL & GROCERY PLANNER */}
       {activeSubTab === 'iftar' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs">
-            <h4 className="text-base font-bold text-[#16241A] mb-4">{t('addIftarMenuItem')}</h4>
-            <form onSubmit={handleAddMeal} className="space-y-4 text-xs font-semibold">
+          <div className="lg:col-span-1 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs">
+            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5">{t('addIftarMenuItem')}</h4>
+            <form onSubmit={handleAddMeal} className="space-y-4">
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('dishTitle')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('dishTitle')}</label>
                 <input
                   type="text"
                   placeholder={t('dishTitlePlaceholder')}
                   value={mealTitle}
                   onChange={(e) => setMealTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('dishDesc')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('dishDesc')}</label>
                 <input
                   type="text"
                   placeholder={t('dishDescPlaceholder')}
                   value={mealDesc}
                   onChange={(e) => setMealDesc(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('groceryIngredients')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('groceryIngredients')}</label>
                 <input
                   type="text"
                   placeholder={t('groceryPlaceholder')}
                   value={mealIngredients}
                   onChange={(e) => setMealIngredients(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('expectedGuests')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('expectedGuests')}</label>
                 <input
                   type="number"
                   min="1"
                   value={mealGuests}
                   onChange={(e) => setMealGuests(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-[#5B3FA8] text-white font-bold text-xs uppercase"
+                className="w-full py-3.5 rounded-2xl bg-[#5B3FA8] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider cursor-pointer shadow-xs"
               >
                 {t('addMenuBtn')}
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-3">
-            <h4 className="text-base font-bold text-[#16241A] mb-4">{t('plannedIftarDishes')}</h4>
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs space-y-3.5">
+            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5">{t('plannedIftarDishes')}</h4>
             {iftarMeals.map((meal) => (
-              <div key={meal.id} className="p-4 rounded-xl border border-stone-200 bg-stone-50 flex items-start justify-between">
+              <div key={meal.id} className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50 flex items-start justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-[#16241A]">{meal.title}</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base sm:text-lg font-bold text-[#16241A]">{meal.title}</span>
                     {meal.sunnahItem && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
                         {t('sunnahLabel')}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#5D6B5A] mt-1">{meal.description}</p>
+                  <p className="text-xs sm:text-sm text-stone-600 font-medium mt-1">{meal.description}</p>
                   {meal.ingredients.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2.5">
                       {meal.ingredients.map((ing, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white border border-stone-200 text-[10px] text-stone-600 font-medium">
+                        <span key={idx} className="px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-xs text-stone-700 font-medium">
                           {ing}
                         </span>
                       ))}
@@ -500,9 +500,9 @@ export const RamadanModule: React.FC = () => {
 
                 <button
                   onClick={() => deleteIftarMeal(meal.id)}
-                  className="text-stone-300 hover:text-red-500 p-1"
+                  className="text-stone-300 hover:text-red-500 p-2 cursor-pointer"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
                 </button>
               </div>
             ))}
@@ -512,45 +512,45 @@ export const RamadanModule: React.FC = () => {
 
       {/* 7. SUBTAB 5: FIDYA & KAFFARAH CALCULATOR */}
       {activeSubTab === 'fidya' && (
-        <div className="bg-white rounded-2xl p-6 lg:p-8 border border-stone-200 shadow-xs max-w-xl mx-auto space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FAF0D8] text-[#C89B2E] flex items-center justify-center font-bold">
-              <Calculator className="w-5 h-5" />
+        <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs max-w-xl mx-auto space-y-6">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#FAF0D8] text-[#C89B2E] flex items-center justify-center font-bold shadow-xs">
+              <Calculator className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-[#16241A]">{t('fidyaCalculatorTitle')}</h4>
-              <p className="text-xs text-[#5D6B5A]">{t('daysMissedLabel')}</p>
+              <h4 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('fidyaCalculatorTitle')}</h4>
+              <p className="text-sm sm:text-base text-stone-600 font-medium">{t('daysMissedLabel')}</p>
             </div>
           </div>
 
-          <div className="space-y-4 text-xs font-semibold">
+          <div className="space-y-4">
             <div>
-              <label className="block text-[#5D6B5A] mb-1">{t('daysMissedLabel')}</label>
+              <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('daysMissedLabel')}</label>
               <input
                 type="number"
                 min="1"
                 max="30"
                 value={fidyaSettings.daysMissed}
                 onChange={(e) => updateFidyaSettings({ daysMissed: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-[#5D6B5A] mb-1">{t('fidyaRatePerDay')} ($USD / Local)</label>
+              <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('fidyaRatePerDay')} ($USD / Local)</label>
               <input
                 type="number"
                 min="1"
                 value={fidyaSettings.ratePerDay}
                 onChange={(e) => updateFidyaSettings({ ratePerDay: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
               />
             </div>
 
-            <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+            <div className="pt-5 border-t border-stone-200/80 flex items-center justify-between">
               <div>
-                <p className="text-xs text-[#5D6B5A]">{t('totalFidyaDueLabel')}</p>
-                <p className="text-2xl font-extrabold text-[#C89B2E] tabular-nums">
+                <p className="text-sm text-stone-600 font-semibold">{t('totalFidyaDueLabel')}</p>
+                <p className="text-3xl font-black text-[#C89B2E] tabular-nums mt-0.5">
                   ${totalFidyaDue} USD
                 </p>
               </div>
@@ -562,64 +562,64 @@ export const RamadanModule: React.FC = () => {
       {/* 8. SUBTAB 6: RAMADAN JOURNAL */}
       {activeSubTab === 'journal' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs">
-            <h4 className="text-base font-bold text-[#16241A] mb-4">{t('ramadanDailyJournal')}</h4>
-            <form onSubmit={handleSaveJournal} className="space-y-4 text-xs font-semibold">
+          <div className="lg:col-span-1 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs">
+            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5">{t('ramadanDailyJournal')}</h4>
+            <form onSubmit={handleSaveJournal} className="space-y-4">
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('selectDay')} (1–30)</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('selectDay')} (1–30)</label>
                 <input
                   type="number"
                   min="1"
                   max="30"
                   value={journalDay}
                   onChange={(e) => setJournalDay(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('gratitudeLabel')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('gratitudeLabel')}</label>
                 <textarea
                   rows={2}
                   placeholder={t('gratitudePlaceholder')}
                   value={journalGratitude}
                   onChange={(e) => setJournalGratitude(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('reflectionLabel')}</label>
+                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('reflectionLabel')}</label>
                 <textarea
                   rows={4}
                   placeholder={t('reflectionPlaceholder')}
                   value={journalReflection}
                   onChange={(e) => setJournalReflection(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base outline-none"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-[#5B3FA8] text-white font-bold text-xs uppercase"
+                className="w-full py-3.5 rounded-2xl bg-[#5B3FA8] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider cursor-pointer shadow-xs"
               >
                 {t('saveReflection')}
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-3">
-            <h4 className="text-base font-bold text-[#16241A] mb-4">{t('savedReflections')}</h4>
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs space-y-3.5">
+            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5">{t('savedReflections')}</h4>
             {ramadanJournals.map((j) => (
-              <div key={j.day} className="p-4 rounded-xl border border-stone-200 bg-stone-50 space-y-2">
+              <div key={j.day} className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#5B3FA8]">{t('dayNumber')} {j.day}</span>
-                  <span className="text-[11px] text-[#5D6B5A]">{j.date}</span>
+                  <span className="text-sm font-extrabold text-[#5B3FA8]">{t('dayNumber')} {j.day}</span>
+                  <span className="text-xs sm:text-sm text-stone-500 font-semibold">{j.date}</span>
                 </div>
-                <p className="text-xs text-[#16241A] font-semibold">{t('gratitudeLabel')}: {j.gratitude}</p>
-                <p className="text-xs text-[#5D6B5A] leading-relaxed">{j.reflection}</p>
+                <p className="text-sm sm:text-base text-[#16241A] font-bold">{t('gratitudeLabel')}: {j.gratitude}</p>
+                <p className="text-sm sm:text-base text-stone-600 leading-relaxed font-medium">{j.reflection}</p>
               </div>
             ))}
           </div>
@@ -628,89 +628,89 @@ export const RamadanModule: React.FC = () => {
 
       {/* 9. SUBTAB 7: EID PREP & ZAKAT AL-FITR */}
       {activeSubTab === 'eid' && (
-        <div className="bg-white rounded-2xl p-6 lg:p-8 border border-stone-200 shadow-xs space-y-6">
+        <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs space-y-6">
           <div>
-            <h4 className="text-lg font-bold text-[#16241A]">{t('eidPrepTitle')}</h4>
-            <p className="text-xs text-[#5D6B5A]">{t('zakatFitrStatus')}</p>
+            <h4 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('eidPrepTitle')}</h4>
+            <p className="text-sm sm:text-base text-stone-600 font-medium">{t('zakatFitrStatus')}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Zakat al-Fitr */}
-            <div className="p-5 rounded-2xl border border-emerald-200 bg-emerald-50/50 space-y-3">
-              <span className="text-xs font-bold uppercase text-emerald-800">{t('zakatFitrStatus')}</span>
-              <p className="text-sm font-semibold text-[#16241A]">
+            <div className="p-6 rounded-3xl border border-emerald-200 bg-emerald-50/50 space-y-3.5">
+              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-emerald-800">{t('zakatFitrStatus')}</span>
+              <p className="text-base sm:text-lg font-bold text-[#16241A]">
                 {eidChecklist.zakatFitrPaid ? t('fitrPaid') : t('fitrPending')}
               </p>
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3.5 pt-2">
                 <button
                   onClick={() => updateEidChecklist({ zakatFitrPaid: !eidChecklist.zakatFitrPaid })}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                  className={`px-5 py-2.5 rounded-2xl text-sm font-bold transition-colors cursor-pointer ${
                     eidChecklist.zakatFitrPaid
-                      ? 'bg-[#2E8B4F] text-white'
+                      ? 'bg-[#2E8B4F] text-white shadow-xs'
                       : 'bg-white border border-stone-300 text-stone-700'
                   }`}
                 >
                   {eidChecklist.zakatFitrPaid ? `✓ ${t('fitrPaid')}` : t('markAsPaid')}
                 </button>
-                <span className="text-xs font-bold text-stone-600">
+                <span className="text-sm font-bold text-stone-700">
                   Rate: ${eidChecklist.zakatFitrAmount} / person
                 </span>
               </div>
             </div>
 
             {/* Eid Prayer Location */}
-            <div className="p-5 rounded-2xl border border-stone-200 bg-stone-50 space-y-3">
-              <span className="text-xs font-bold uppercase text-stone-700">{t('eidSunnahs')}</span>
+            <div className="p-6 rounded-3xl border border-stone-200 bg-stone-50 space-y-3.5">
+              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-stone-700">{t('eidSunnahs')}</span>
               <div>
-                <label className="block text-[11px] text-[#5D6B5A] font-semibold">{t('mosqueAttended')}</label>
+                <label className="block text-xs sm:text-sm text-stone-600 font-bold mb-1">{t('mosqueAttended')}</label>
                 <input
                   type="text"
                   value={eidChecklist.prayerLocation}
                   onChange={(e) => updateEidChecklist({ prayerLocation: e.target.value })}
-                  className="w-full mt-1 px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold bg-white"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-[#5D6B5A] font-semibold">{t('iftarTime')}</label>
+                <label className="block text-xs sm:text-sm text-stone-600 font-bold mb-1">{t('iftarTime')}</label>
                 <input
                   type="text"
                   value={eidChecklist.prayerTime}
                   onChange={(e) => updateEidChecklist({ prayerTime: e.target.value })}
-                  className="w-full mt-1 px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold bg-white"
                 />
               </div>
             </div>
           </div>
 
           {/* Eid Gifts Planner */}
-          <div className="pt-4 border-t border-stone-200">
-            <h5 className="text-sm font-bold text-[#16241A] mb-3">{t('giftsLovedOnes')}</h5>
-            <form onSubmit={handleAddEidGift} className="flex flex-wrap gap-2 mb-4">
+          <div className="pt-5 border-t border-stone-200">
+            <h5 className="text-base sm:text-lg font-bold text-[#16241A] mb-3">{t('giftsLovedOnes')}</h5>
+            <form onSubmit={handleAddEidGift} className="flex flex-wrap gap-2.5 mb-4">
               <input
                 type="text"
                 placeholder={t('recipientPlaceholder')}
                 value={newGiftRecipient}
                 onChange={(e) => setNewGiftRecipient(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-stone-200 text-xs outline-none"
+                className="px-4 py-2.5 rounded-2xl border border-stone-200 text-sm outline-none"
               />
               <input
                 type="text"
                 placeholder={t('giftPlaceholder')}
                 value={newGiftItem}
                 onChange={(e) => setNewGiftItem(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-stone-200 text-xs outline-none"
+                className="px-4 py-2.5 rounded-2xl border border-stone-200 text-sm outline-none"
               />
-              <button type="submit" className="px-4 py-2 rounded-xl bg-[#5B3FA8] text-white text-xs font-bold">
+              <button type="submit" className="px-5 py-2.5 rounded-2xl bg-[#5B3FA8] text-white text-sm font-bold cursor-pointer shadow-xs">
                 + {t('addGift')}
               </button>
             </form>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {eidChecklist.giftsPlanned.map((gift) => (
-                <div key={gift.id} className="p-3 rounded-xl border border-stone-200 flex items-center justify-between text-xs">
+                <div key={gift.id} className="p-3.5 sm:p-4 rounded-2xl border border-stone-200 flex items-center justify-between text-sm">
                   <div>
                     <span className="font-bold text-[#16241A]">{gift.recipient}</span>
-                    <span className="text-[#5D6B5A]"> — {gift.gift}</span>
+                    <span className="text-stone-600"> — {gift.gift}</span>
                   </div>
                   <button
                     onClick={() => {
@@ -719,8 +719,8 @@ export const RamadanModule: React.FC = () => {
                       );
                       updateEidChecklist({ giftsPlanned: updated });
                     }}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${
-                      gift.ready ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-600'
+                    className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${
+                      gift.ready ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-stone-100 text-stone-700'
                     }`}
                   >
                     {gift.ready ? `✓ ${t('fitrPaid')}` : t('pendingStatus')}
