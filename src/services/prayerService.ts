@@ -1,4 +1,19 @@
 import { PrayerName, PrayerTimesData, LocationConfig } from '../types';
+import {
+  COUNTRIES_DATABASE,
+  ALL_LOCATIONS,
+  getAllCountries,
+  getCitiesForCountry,
+  findLocationByCountryAndCity,
+} from './locationsData';
+
+export {
+  COUNTRIES_DATABASE,
+  ALL_LOCATIONS,
+  getAllCountries,
+  getCitiesForCountry,
+  findLocationByCountryAndCity,
+};
 
 export const CALCULATION_METHODS = [
   { id: 2, name: 'ISNA (Islamic Society of North America)' },
@@ -12,22 +27,8 @@ export const CALCULATION_METHODS = [
   { id: 15, name: 'Moonsighting Committee Worldwide' },
 ];
 
-export const POPULAR_LOCATIONS: LocationConfig[] = [
-  { city: 'London', country: 'United Kingdom', latitude: 51.5074, longitude: -0.1278, timezone: 'Europe/London' },
-  { city: 'New York', country: 'United States', latitude: 40.7128, longitude: -74.0060, timezone: 'America/New_York' },
-  { city: 'Makkah', country: 'Saudi Arabia', latitude: 21.4225, longitude: 39.8262, timezone: 'Asia/Riyadh' },
-  { city: 'Madinah', country: 'Saudi Arabia', latitude: 24.5247, longitude: 39.5692, timezone: 'Asia/Riyadh' },
-  { city: 'Cairo', country: 'Egypt', latitude: 30.0444, longitude: 31.2357, timezone: 'Africa/Cairo' },
-  { city: 'Istanbul', country: 'Turkey', latitude: 41.0082, longitude: 28.9784, timezone: 'Europe/Istanbul' },
-  { city: 'Dubai', country: 'United Arab Emirates', latitude: 25.2048, longitude: 55.2708, timezone: 'Asia/Dubai' },
-  { city: 'Karachi', country: 'Pakistan', latitude: 24.8607, longitude: 67.0011, timezone: 'Asia/Karachi' },
-  { city: 'Dhaka', country: 'Bangladesh', latitude: 23.8103, longitude: 90.4125, timezone: 'Asia/Dhaka' },
-  { city: 'Mumbai', country: 'India', latitude: 19.0760, longitude: 72.8777, timezone: 'Asia/Kolkata' },
-  { city: 'Kuala Lumpur', country: 'Malaysia', latitude: 3.1390, longitude: 101.6869, timezone: 'Asia/Kuala_Lumpur' },
-  { city: 'Jakarta', country: 'Indonesia', latitude: -6.2088, longitude: 106.8456, timezone: 'Asia/Jakarta' },
-  { city: 'Toronto', country: 'Canada', latitude: 43.6532, longitude: -79.3832, timezone: 'America/Toronto' },
-  { city: 'Sydney', country: 'Australia', latitude: -33.8688, longitude: 151.2093, timezone: 'Australia/Sydney' },
-];
+export const POPULAR_LOCATIONS: LocationConfig[] = ALL_LOCATIONS;
+
 
 /**
  * Calculates Kaaba (Qibla) bearing from any coordinate

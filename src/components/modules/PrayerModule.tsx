@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation, isRTL } from '../../i18n/translations';
 import { PrayerName, PrayerStatus } from '../../types';
-import { CALCULATION_METHODS, POPULAR_LOCATIONS } from '../../services/prayerService';
+import {
+  CALCULATION_METHODS,
+  getAllCountries,
+  getCitiesForCountry,
+  findLocationByCountryAndCity,
+} from '../../services/prayerService';
 import {
   Clock,
   CheckCircle2,
@@ -49,8 +54,41 @@ export const PrayerModule: React.FC = () => {
   const [customSunnahType, setCustomSunnahType] = useState<'tahajjud' | 'duha' | 'witr' | 'rawatib'>('rawatib');
   const [customRakahs, setCustomRakahs] = useState<number>(2);
 
-  const handleLocationChange = (cityName: string) => {
-    const loc = POPULAR_LOCATIONS.find((l) => l.city === cityName);
+  const currentCountry = currentUser?.location?.country || 'Saudi Arabia';
+  const currentCity = currentUser?.location?.city || 'Makkah';
+
+  const countries = useMemo(() => {
+    const list = getAllCountries();
+    if (currentCountry && !list.includes(currentCountry)) {
+      return [currentCountry, ...list];
+    }
+    return list;
+  }, [currentCountry]);
+
+  const citiesInCurrentCountry = useMemo(() => {
+    const list = getCitiesForCountry(currentCountry);
+    if (currentUser?.location) {
+      if (!list.some((c) => c.city.toLowerCase() === currentUser.location.city.toLowerCase())) {
+        return [currentUser.location, ...list];
+      }
+    }
+    return list;
+  }, [currentCountry, currentUser]);
+
+  const handleCountryChange = (countryName: string) => {
+    const cities = getCitiesForCountry(countryName);
+    if (cities.length > 0 && currentUser) {
+      updateProfile({ location: cities[0] });
+    }
+  };
+
+  const handleCityChange = (cityName: string) => {
+    const matched = citiesInCurrentCountry.find((c) => c.city === cityName);
+    if (matched && currentUser) {
+      updateProfile({ location: matched });
+      return;
+    }
+    const loc = findLocationByCountryAndCity(currentCountry, cityName);
     if (loc && currentUser) {
       updateProfile({ location: loc });
     }
@@ -82,29 +120,53 @@ export const PrayerModule: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Location & Madhab Selectors */}
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-stone-100 border border-stone-200">
-            <MapPin className="w-4 h-4 text-[#2E8B4F]" />
+        {/* Quick Location (Country -> City) & Madhab Selectors */}
+        <div className="flex flex-wrap items-center gap-2.5 text-sm">
+          {/* Country Selector */}
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-stone-100 border border-stone-200">
+            <MapPin className="w-3.5 h-3.5 text-[#2E8B4F] shrink-0" />
             <select
-              value={currentUser?.location.city || 'London'}
-              onChange={(e) => handleLocationChange(e.target.value)}
-              className="bg-transparent font-bold text-[#16241A] outline-none cursor-pointer text-sm"
+              value={currentCountry}
+              onChange={(e) => handleCountryChange(e.target.value)}
+              className="bg-transparent font-bold text-[#16241A] outline-none cursor-pointer text-xs sm:text-sm max-w-[130px] truncate"
             >
-              {POPULAR_LOCATIONS.map((loc) => (
-                <option key={loc.city} value={loc.city}>
-                  {loc.city}, {loc.country}
+              {countries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-stone-100 border border-stone-200">
-            <span className="text-stone-600 font-medium">{t('Asr')}:</span>
+          {/* City Selector */}
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-stone-100 border border-stone-200">
+            <select
+              value={currentCity}
+              onChange={(e) => handleCityChange(e.target.value)}
+              className="bg-transparent font-bold text-[#16241A] outline-none cursor-pointer text-xs sm:text-sm max-w-[120px] truncate"
+            >
+              {citiesInCurrentCountry.map((loc) => (
+                <option key={loc.city} value={loc.city}>
+                  {loc.city}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Coordinates Chip */}
+          {currentUser?.location && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#2E8B4F]/10 border border-[#2E8B4F]/20 text-[#2E8B4F] text-xs font-mono font-bold">
+              <span>{currentUser.location.latitude.toFixed(2)}°, {currentUser.location.longitude.toFixed(2)}°</span>
+            </div>
+          )}
+
+          {/* Madhab */}
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-stone-100 border border-stone-200">
+            <span className="text-stone-500 font-semibold text-xs">{t('Asr')}:</span>
             <select
               value={currentUser?.madhab || 'shafi'}
               onChange={(e) => handleMadhabChange(e.target.value as 'shafi' | 'hanafi')}
-              className="bg-transparent font-bold text-[#16241A] outline-none cursor-pointer capitalize text-sm"
+              className="bg-transparent font-bold text-[#16241A] outline-none cursor-pointer capitalize text-xs sm:text-sm"
             >
               <option value="shafi">{t('standardMadhab')}</option>
               <option value="hanafi">{t('hanafiMadhab')}</option>

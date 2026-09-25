@@ -3,7 +3,7 @@ import { Language } from '../types';
 export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
   en: {
     // Ramadan Hero & Banner
-    ramadanBannerTitle: 'Ramadan Mubarak Hub',
+    ramadanBannerTitle: 'Ramadan Kareem',
     ramadanDailyAnchor: 'Daily Fasting & Worship Anchor',
     ramadanBannerDesc: 'Organize your 30-day fasts, Taraweeh congregations, Qur\'an pacing, and Laylatul Qadr',
     stopEatingBefore: 'Stop eating 10m before',
@@ -227,7 +227,10 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
     displayNameLabel: 'Display Name',
     emailAddressLabel: 'Email Address',
     appWideLanguage: 'App-Wide Language',
-    locationCity: 'Location (City)',
+    locationCountry: 'Country',
+    selectCountryLabel: 'Select Country',
+    locationCity: 'City',
+    accurateCoordsNote: 'Coordinates & timezone are automatically calibrated for exact astronomical prayer timings.',
     calcMethodLabel: 'Calculation Method',
     juristicMadhabLabel: 'Asr Juristic Madhab',
     saveSettingsBtn: 'Save Settings',
@@ -282,7 +285,7 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
 
   ar: {
     // Ramadan Hero & Banner
-    ramadanBannerTitle: 'واحة رمضان المبارك',
+    ramadanBannerTitle: 'رمضان كريم',
     ramadanDailyAnchor: 'المرتكز اليومي للصيام والعبادة',
     ramadanBannerDesc: 'نظّم صيام ٣٠ يوماً، وصلاة التراويح، وتلاوة القرآن، وتحري ليلة القدر',
     stopEatingBefore: 'الإمساك قبل الفجر بـ ١٠ دقائق',
@@ -506,7 +509,10 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
     displayNameLabel: 'الاسم الظاهر',
     emailAddressLabel: 'البريد الإلكتروني',
     appWideLanguage: 'لغة التطبيق',
+    locationCountry: 'الدولة',
+    selectCountryLabel: 'اختر الدولة أولاً',
     locationCity: 'المدينة',
+    accurateCoordsNote: 'تتم معايرة الإحداثيات والمنطقة الزمنية تلقائياً لأدق مواقيت صلاة وتاريخ هجري.',
     calcMethodLabel: 'طريقة الحساب الفلكي',
     juristicMadhabLabel: 'مذهب حساب العصر',
     saveSettingsBtn: 'حفظ التعديلات',
@@ -561,7 +567,7 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
 
   ur: {
     // Ramadan Hero & Banner
-    ramadanBannerTitle: 'رمضان مبارک مرکز',
+    ramadanBannerTitle: 'رمضان کریم',
     ramadanDailyAnchor: 'روزمرہ روزوں و عبادات کا مرکز',
     ramadanBannerDesc: '30 روزوں، باجماعت تراویح، تلاوتِ قرآن اور شبِ قدر کو منظم کریں',
     stopEatingBefore: 'سحری ختم ہونے سے 10 منٹ پہلے رک جائیں',
@@ -785,7 +791,10 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
     displayNameLabel: 'ظاہر ہونے والا نام',
     emailAddressLabel: 'ای میل ایڈریس',
     appWideLanguage: 'ایپ کی زبان',
+    locationCountry: 'ملک',
+    selectCountryLabel: 'پہلے ملک منتخب کریں',
     locationCity: 'شہر',
+    accurateCoordsNote: 'فلکیاتی اوقات کی درستگی کے لیے نقاط و ٹائم زون خودکار ترتیب دیے گئے ہیں۔',
     calcMethodLabel: 'حساب کا طریقہ',
     juristicMadhabLabel: 'عصر کا فقہی مسلک',
     saveSettingsBtn: 'ترتیبات محفوظ کریں',
@@ -840,7 +849,7 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
 
   hi: {
     // Ramadan Hero & Banner
-    ramadanBannerTitle: 'माहे रमज़ान केंद्र',
+    ramadanBannerTitle: 'रमज़ान करीम',
     ramadanDailyAnchor: 'दैनिक रोज़ा और इबादत का केंद्र',
     ramadanBannerDesc: '30 दिनों के रोज़े, तरावीह जमाअत, क़ुरआन तिलावत और शबे क़द्र को व्यवस्थित करें',
     stopEatingBefore: 'सहरी ख़त्म होने से 10 मिनट पहले रुकें',
@@ -1064,7 +1073,10 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
     displayNameLabel: 'प्रदर्शित नाम',
     emailAddressLabel: 'ईमेल पता',
     appWideLanguage: 'ऐप की भाषा',
+    locationCountry: 'देश',
+    selectCountryLabel: 'पहले देश चुनें',
     locationCity: 'शहर',
+    accurateCoordsNote: 'सटीक नमाज़ के समय के लिए निर्देशांक व टाइमज़ोन स्वचालित रूप से कैलिब्रेट किए गए हैं।',
     calcMethodLabel: 'गणना पद्धति',
     juristicMadhabLabel: 'असर का तरीक़ा',
     saveSettingsBtn: 'सेटिंग्स सहेजें',
@@ -1119,7 +1131,7 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
 
   bn: {
     // Ramadan Hero & Banner
-    ramadanBannerTitle: 'মাহে রমজান কেন্দ্র',
+    ramadanBannerTitle: 'রমজান কারিম',
     ramadanDailyAnchor: 'দৈনিক রোজা ও ইবাদতের কেন্দ্র',
     ramadanBannerDesc: '৩০ দিনের রোজা, তারাবিহর জামাত, কোরআন পাঠ এবং শবে কদর পরিচালনা করুন',
     stopEatingBefore: 'সাহরির ১০ মিনিট পূর্বে পানাহার শেষ করুন',
@@ -1343,7 +1355,10 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
     displayNameLabel: 'প্রদর্শিত নাম',
     emailAddressLabel: 'ইমেইল ঠিকানা',
     appWideLanguage: 'অ্যাপের ভাষা',
+    locationCountry: 'দেশ',
+    selectCountryLabel: 'প্রথমে দেশ নির্বাচন করুন',
     locationCity: 'শহর',
+    accurateCoordsNote: 'সঠিক নামাজের সময় ও হিজরি তারিখের জন্য স্থানাঙ্ক ও টাইম জোন স্বয়ংক্রিয়ভাবে সেট করা হয়েছে।',
     calcMethodLabel: 'গণনা পদ্ধতি',
     juristicMadhabLabel: 'আসরের ফিকহি মাজহাব',
     saveSettingsBtn: 'সেটিংস সংরক্ষণ করুন',

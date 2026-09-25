@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation, isRTL, getFontFamilyClass } from '../../i18n/translations';
 import { BrandMark } from '../common/BrandMark';
-import { CALCULATION_METHODS, POPULAR_LOCATIONS } from '../../services/prayerService';
+import {
+  CALCULATION_METHODS,
+  getAllCountries,
+  getCitiesForCountry,
+  findLocationByCountryAndCity,
+} from '../../services/prayerService';
 import { Language, LocationConfig } from '../../types';
 import {
   Clock,
@@ -16,6 +21,7 @@ import {
   Globe,
   Sparkles,
   ShieldCheck,
+  MapPin,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -36,7 +42,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedLang, setSelectedLang] = useState<Language>(language);
-  const [selectedLocation, setSelectedLocation] = useState<LocationConfig>(POPULAR_LOCATIONS[0]);
+
+  // Country & City cascading state
+  const countries = useMemo(() => getAllCountries(), []);
+  const [selectedCountry, setSelectedCountry] = useState<string>('Saudi Arabia');
+  const [selectedCity, setSelectedCity] = useState<string>('Makkah');
+
+  const availableCities = useMemo(() => {
+    return getCitiesForCountry(selectedCountry);
+  }, [selectedCountry]);
+
+  const selectedLocation: LocationConfig = useMemo(() => {
+    const found = findLocationByCountryAndCity(selectedCountry, selectedCity);
+    if (found) return found;
+    if (availableCities.length > 0) return availableCities[0];
+    return {
+      city: 'Makkah',
+      country: 'Saudi Arabia',
+      latitude: 21.4225,
+      longitude: 39.8262,
+      timezone: 'Asia/Riyadh',
+    };
+  }, [selectedCountry, selectedCity, availableCities]);
+
+  const handleCountryChange = (newCountry: string) => {
+    setSelectedCountry(newCountry);
+    const cities = getCitiesForCountry(newCountry);
+    if (cities.length > 0) {
+      setSelectedCity(cities[0].city);
+    }
+  };
+
   const [calcMethod, setCalcMethod] = useState<number>(2);
   const [madhab, setMadhab] = useState<'shafi' | 'hanafi'>('shafi');
   const [errorMsg, setErrorMsg] = useState('');
@@ -347,23 +383,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                 </select>
               </div>
 
-              {/* Location Selection */}
-              <div>
-                <label className="block text-[#5D6B5A] mb-1">{t('selectCityLabel')}</label>
-                <select
-                  value={selectedLocation.city}
-                  onChange={(e) => {
-                    const loc = POPULAR_LOCATIONS.find((l) => l.city === e.target.value);
-                    if (loc) setSelectedLocation(loc);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none"
-                >
-                  {POPULAR_LOCATIONS.map((loc) => (
-                    <option key={loc.city} value={loc.city}>
-                      {loc.city}, {loc.country}
-                    </option>
-                  ))}
-                </select>
+              {/* Cascading Location Selection: Country first, then City */}
+              <div className="space-y-2.5 p-3.5 rounded-2xl bg-stone-50 border border-stone-200">
+                <div className="flex items-center gap-1.5 text-stone-700 font-bold text-xs">
+                  <MapPin className="w-3.5 h-3.5 text-[#2E8B4F]" />
+                  <span>{t('locationSettings')}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[#5D6B5A] mb-1 text-[11px] font-bold">
+                      1. {t('locationCountry')}
+                    </label>
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => handleCountryChange(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300 outline-none bg-white text-xs font-bold"
+                    >
+                      {countries.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#5D6B5A] mb-1 text-[11px] font-bold">
+                      2. {t('locationCity')}
+                    </label>
+                    <select
+                      value={selectedCity}
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300 outline-none bg-white text-xs font-bold"
+                    >
+                      {availableCities.map((loc) => (
+                        <option key={loc.city} value={loc.city}>
+                          {loc.city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-1.5 border-t border-stone-200/60 flex items-center justify-between text-[11px] text-stone-500 font-mono">
+                  <span>{selectedLocation.city}, {selectedLocation.country}</span>
+                  <span className="text-[#2E8B4F] font-bold">
+                    {selectedLocation.latitude.toFixed(2)}°, {selectedLocation.longitude.toFixed(2)}°
+                  </span>
+                </div>
               </div>
 
               {/* Calculation Method */}
