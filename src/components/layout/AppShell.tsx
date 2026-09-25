@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation, isRTL, getFontFamilyClass } from '../../i18n/translations';
 import { BrandMark } from '../common/BrandMark';
+import { LanguageDropdown } from '../common/LanguageDropdown';
 import { Language } from '../../types';
 import {
   Home,
@@ -67,7 +68,6 @@ export const AppShell: React.FC<AppShellProps> = ({
   const fontClass = getFontFamilyClass(language);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   // Module items for sidebar and navigation
@@ -317,42 +317,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             </button>
 
             {/* Language Switcher Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#0B2E1C]/15 hover:border-[#0B2E1C]/30 text-xs sm:text-sm font-bold text-[#16241A] shadow-xs transition-colors cursor-pointer"
-                title={t('selectLanguage')}
-              >
-                <Globe className="w-4 h-4 text-[#C89B2E]" />
-                <span className="uppercase">{language}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-[#5D6B5A]" />
-              </button>
-
-              {langMenuOpen && (
-                <div
-                  className={`absolute ${rtl ? 'left-0' : 'right-0'} mt-2 w-48 bg-white border border-[#0B2E1C]/15 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in duration-150`}
-                >
-                  <p className="px-3.5 py-1 text-xs font-bold text-[#5D6B5A] uppercase tracking-wider">
-                    {t('selectLanguage')}
-                  </p>
-                  {languages.map((l) => (
-                    <button
-                      key={l.code}
-                      onClick={() => {
-                        setLanguage(l.code);
-                        setLangMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm flex items-center justify-between hover:bg-[#F7F4EC] transition-colors cursor-pointer ${
-                        language === l.code ? 'font-extrabold text-[#2E8B4F] bg-[#E1F2E7]/40' : 'text-[#16241A] font-semibold'
-                      }`}
-                    >
-                      <span>{l.label}</span>
-                      <span className="text-xs text-[#5D6B5A]">{l.native}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <LanguageDropdown variant="light" />
 
             {/* Mobile Menu Toggle */}
             <button
@@ -370,12 +335,15 @@ export const AppShell: React.FC<AppShellProps> = ({
             <div className="bg-[#0B2E1C] rounded-t-3xl p-6 text-[#F3F0E4] max-h-[85vh] overflow-y-auto border-t-2 border-[#C89B2E]">
               <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#123D28]">
                 <BrandMark variant="dark" size="sm" />
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-xl bg-[#123D28] text-[#9FB6A3] hover:text-white cursor-pointer transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <LanguageDropdown variant="dark" />
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 rounded-xl bg-[#123D28] text-[#9FB6A3] hover:text-white cursor-pointer transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 mb-6">

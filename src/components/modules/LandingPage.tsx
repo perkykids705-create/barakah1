@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation, isRTL, getFontFamilyClass } from '../../i18n/translations';
 import { BrandMark } from '../common/BrandMark';
+import { LanguageDropdown } from '../common/LanguageDropdown';
 import {
   CALCULATION_METHODS,
   getAllCountries,
@@ -232,24 +233,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
 
         <div className="flex items-center gap-3">
           {/* Language Switcher */}
-          <div className="flex items-center gap-1.5 bg-[#123D28] px-3 py-2 rounded-xl border border-[#C89B2E]/40 text-xs sm:text-sm font-semibold">
-            <Globe className="w-4 h-4 text-[#FBBF24]" />
-            <select
-              value={language}
-              onChange={(e) => {
-                const l = e.target.value as Language;
-                setLanguage(l);
-                setSelectedLang(l);
-              }}
-              className="bg-transparent font-bold text-white outline-none cursor-pointer"
-            >
-              {languages.map((l) => (
-                <option key={l.code} value={l.code} className="text-black bg-white">
-                  {l.label} ({l.native})
-                </option>
-              ))}
-            </select>
-          </div>
+          <LanguageDropdown variant="dark" />
 
           {authMode === 'landing' ? (
             <div className="flex items-center gap-2">
