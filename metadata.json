@@ -1,0 +1,6 @@
+{
+  "name": "BarakahDaily",
+  "description": "Muslim Daily Life & Productivity Web App. Anchored around the 5 daily prayers, Qur'an tracking, Ramadan dashboard, Zakat calculator, and Group Khatm.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
