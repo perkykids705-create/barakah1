@@ -6,7 +6,17 @@ export type PrayerName = 'Fajr' | 'Sunrise' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Ish
 
 export type PrayerStatus = 'on-time' | 'late' | 'missed' | 'qada';
 
-export type IslamicPriority = 'fardh' | 'wajib' | 'nafl';
+export type IslamicPriority = 'fardh' | 'wajib' | 'sunnah' | 'nafl' | 'mubah';
+
+export type LifeTaskCategory =
+  | 'worship'
+  | 'quran'
+  | 'work'
+  | 'family'
+  | 'health'
+  | 'charity'
+  | 'finance'
+  | 'personal';
 
 export interface LocationConfig {
   city: string;
@@ -127,6 +137,11 @@ export interface Habit {
   name: string;
   nameArabic?: string;
   category: 'spiritual' | 'general';
+  lifeCategory?: LifeTaskCategory;
+  priorityTag?: IslamicPriority;
+  frequency?: 'daily' | 'weekdays' | 'weekends' | 'custom';
+  targetDaysPerWeek?: number;
+  description?: string;
   streak: number;
   logs: Record<string, boolean>; // date -> completed
 }
@@ -137,7 +152,8 @@ export interface TodoItem {
   priorityTag: IslamicPriority;
   dueDate: string;
   completed: boolean;
-  category: string;
+  category: LifeTaskCategory | string;
+  completedAt?: string;
 }
 
 export interface PlannedBlock {
@@ -147,7 +163,11 @@ export interface PlannedBlock {
   offsetMinutes: number; // e.g. +30 mins after prayer, -15 mins before
   durationMinutes: number;
   priorityTag: IslamicPriority;
+  category?: LifeTaskCategory;
+  date?: string; // YYYY-MM-DD
   completed: boolean;
+  completedAt?: string;
+  completionNote?: string;
 }
 
 export interface RamadanDayRecord {

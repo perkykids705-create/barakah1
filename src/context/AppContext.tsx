@@ -72,13 +72,17 @@ interface AppContextType {
   // Productivity & Planner
   plannedBlocks: PlannedBlock[];
   addPlannedBlock: (block: Omit<PlannedBlock, 'id'>) => void;
+  updatePlannedBlock: (id: string, updates: Partial<PlannedBlock>) => void;
   togglePlannedBlock: (id: string) => void;
   deletePlannedBlock: (id: string) => void;
   habits: Habit[];
   toggleHabit: (id: string, dateStr?: string) => void;
-  addHabit: (name: string, category: 'spiritual' | 'general') => void;
+  addHabit: (name: string, category: 'spiritual' | 'general', extra?: Partial<Habit>) => void;
+  updateHabit: (id: string, updates: Partial<Habit>) => void;
+  deleteHabit: (id: string) => void;
   todos: TodoItem[];
   addTodo: (todo: Omit<TodoItem, 'id'>) => void;
+  updateTodo: (id: string, updates: Partial<TodoItem>) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
 
@@ -183,28 +187,29 @@ const DHIKR_PRESETS: DhikrPreset[] = [
 ];
 
 const INITIAL_HABITS: Habit[] = [
-  { id: 'h1', name: 'Fajr in Congregation', nameArabic: 'صلاة الفجر جماعة', category: 'spiritual', streak: 12, logs: {} },
-  { id: 'h2', name: 'Morning Adhkar & Surah Yasin', nameArabic: 'أذكار الصباح', category: 'spiritual', streak: 9, logs: {} },
-  { id: 'h3', name: 'Qur\'an Reading (1 Juz)', nameArabic: 'تلاوة جزء من القرآن', category: 'spiritual', streak: 14, logs: {} },
-  { id: 'h4', name: 'Evening Adhkar & Istighfar', nameArabic: 'أذكار المساء', category: 'spiritual', streak: 7, logs: {} },
-  { id: 'h5', name: 'Physical Activity & 8k Steps', category: 'general', streak: 5, logs: {} },
-  { id: 'h6', name: 'Islamic Book / Seerah Reading', category: 'general', streak: 8, logs: {} },
+  { id: 'h1', name: 'Fajr in Congregation', nameArabic: 'صلاة الفجر جماعة', category: 'spiritual', lifeCategory: 'worship', priorityTag: 'fardh', frequency: 'daily', targetDaysPerWeek: 7, streak: 12, logs: {} },
+  { id: 'h2', name: 'Morning Adhkar & Surah Yasin', nameArabic: 'أذكار الصباح', category: 'spiritual', lifeCategory: 'worship', priorityTag: 'sunnah', frequency: 'daily', targetDaysPerWeek: 7, streak: 9, logs: {} },
+  { id: 'h3', name: 'Qur\'an Reading (1 Juz)', nameArabic: 'تلاوة جزء من القرآن', category: 'spiritual', lifeCategory: 'quran', priorityTag: 'sunnah', frequency: 'daily', targetDaysPerWeek: 7, streak: 14, logs: {} },
+  { id: 'h4', name: 'Evening Adhkar & Istighfar', nameArabic: 'أذكار المساء', category: 'spiritual', lifeCategory: 'worship', priorityTag: 'sunnah', frequency: 'daily', targetDaysPerWeek: 7, streak: 7, logs: {} },
+  { id: 'h5', name: 'Physical Activity & 8k Steps', category: 'general', lifeCategory: 'health', priorityTag: 'mubah', frequency: 'weekdays', targetDaysPerWeek: 5, streak: 5, logs: {} },
+  { id: 'h6', name: 'Islamic Book / Seerah Reading', category: 'general', lifeCategory: 'personal', priorityTag: 'nafl', frequency: 'daily', targetDaysPerWeek: 7, streak: 8, logs: {} },
 ];
 
 const INITIAL_TODOS: TodoItem[] = [
-  { id: 't1', title: 'Prepare for Friday Jumu\'ah prayer early', priorityTag: 'fardh', dueDate: '2026-09-25', completed: false, category: 'Worship' },
-  { id: 't2', title: 'Deliver groceries to elderly neighbor (Sadaqah)', priorityTag: 'wajib', dueDate: '2026-09-25', completed: true, category: 'Community' },
-  { id: 't3', title: 'Revise Surah Al-Kahf verses 1-20', priorityTag: 'nafl', dueDate: '2026-09-26', completed: false, category: 'Qur\'an' },
-  { id: 't4', title: 'Calculate Zakat al-Fitr for household', priorityTag: 'wajib', dueDate: '2026-09-28', completed: false, category: 'Charity' },
+  { id: 't1', title: 'Prepare for Friday Jumu\'ah prayer early', priorityTag: 'fardh', dueDate: '2026-09-25', completed: false, category: 'worship' },
+  { id: 't2', title: 'Deliver groceries to elderly neighbor (Sadaqah)', priorityTag: 'wajib', dueDate: '2026-09-25', completed: true, category: 'charity', completedAt: '2026-09-25T14:30:00Z' },
+  { id: 't3', title: 'Revise Surah Al-Kahf verses 1-20', priorityTag: 'sunnah', dueDate: '2026-09-26', completed: false, category: 'quran' },
+  { id: 't4', title: 'Calculate Zakat al-Fitr for household', priorityTag: 'wajib', dueDate: '2026-09-28', completed: false, category: 'finance' },
+  { id: 't5', title: 'Review quarterly client deliverables & halal invoices', priorityTag: 'mubah', dueDate: '2026-09-29', completed: false, category: 'work' },
 ];
 
 const INITIAL_PLANNED_BLOCKS: PlannedBlock[] = [
-  { id: 'p1', title: 'Post-Fajr Qur\'an recitation & contemplation', prayerAnchor: 'Fajr', offsetMinutes: 20, durationMinutes: 45, priorityTag: 'fardh', completed: true },
-  { id: 'p2', title: 'Work deep focus session 1', prayerAnchor: 'Dhuhr', offsetMinutes: -120, durationMinutes: 90, priorityTag: 'wajib', completed: true },
-  { id: 'p3', title: 'Dhuhr prayer & rawatib rak\'ahs', prayerAnchor: 'Dhuhr', offsetMinutes: 0, durationMinutes: 25, priorityTag: 'fardh', completed: false },
-  { id: 'p4', title: 'Afternoon client deliverables & email reviews', prayerAnchor: 'Asr', offsetMinutes: -60, durationMinutes: 50, priorityTag: 'wajib', completed: false },
-  { id: 'p5', title: 'Family dinner & Maghrib reflection', prayerAnchor: 'Maghrib', offsetMinutes: 30, durationMinutes: 60, priorityTag: 'nafl', completed: false },
-  { id: 'p6', title: 'Isha prayer, Surah Al-Mulk & bedtime du\'as', prayerAnchor: 'Isha', offsetMinutes: 15, durationMinutes: 35, priorityTag: 'fardh', completed: false },
+  { id: 'p1', title: 'Post-Fajr Qur\'an recitation & contemplation', prayerAnchor: 'Fajr', offsetMinutes: 20, durationMinutes: 45, priorityTag: 'sunnah', category: 'quran', date: '2026-09-25', completed: true, completedAt: '2026-09-25T06:15:00Z' },
+  { id: 'p2', title: 'Work deep focus session & client deliverables', prayerAnchor: 'Dhuhr', offsetMinutes: -120, durationMinutes: 90, priorityTag: 'mubah', category: 'work', date: '2026-09-25', completed: true, completedAt: '2026-09-25T11:45:00Z' },
+  { id: 'p3', title: 'Dhuhr prayer in congregation & rawatib rak\'ahs', prayerAnchor: 'Dhuhr', offsetMinutes: 0, durationMinutes: 25, priorityTag: 'fardh', category: 'worship', date: '2026-09-25', completed: false },
+  { id: 'p4', title: 'Afternoon client deliverables & email reviews', prayerAnchor: 'Asr', offsetMinutes: -60, durationMinutes: 50, priorityTag: 'mubah', category: 'work', date: '2026-09-25', completed: false },
+  { id: 'p5', title: 'Family dinner & Maghrib reflection with children', prayerAnchor: 'Maghrib', offsetMinutes: 30, durationMinutes: 60, priorityTag: 'nafl', category: 'family', date: '2026-09-25', completed: false },
+  { id: 'p6', title: 'Isha prayer, Surah Al-Mulk & bedtime du\'as', prayerAnchor: 'Isha', offsetMinutes: 15, durationMinutes: 35, priorityTag: 'fardh', category: 'worship', date: '2026-09-25', completed: false },
 ];
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -285,7 +290,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Productivity
   const [plannedBlocks, setPlannedBlocks] = useState<PlannedBlock[]>(() => {
     const saved = localStorage.getItem('bd_blocks');
-    return saved ? JSON.parse(saved) : INITIAL_PLANNED_BLOCKS;
+    const today = new Date().toISOString().split('T')[0];
+    if (saved) {
+      try {
+        const parsed: PlannedBlock[] = JSON.parse(saved);
+        return parsed.map((b) => ({ ...b, date: b.date || today }));
+      } catch (e) {
+        console.error('Failed to parse saved blocks', e);
+      }
+    }
+    return INITIAL_PLANNED_BLOCKS;
   });
 
   const [habits, setHabits] = useState<Habit[]>(() => {
@@ -706,14 +720,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Productivity
   const addPlannedBlock = (block: Omit<PlannedBlock, 'id'>) => {
-    const newBlock: PlannedBlock = { ...block, id: `blk_${Date.now()}` };
+    const today = new Date().toISOString().split('T')[0];
+    const newBlock: PlannedBlock = {
+      ...block,
+      date: block.date || today,
+      id: `blk_${Date.now()}`,
+    };
     setPlannedBlocks((prev) => [...prev, newBlock]);
     showNotification(`Added "${block.title}" around ${block.prayerAnchor}`);
   };
 
+  const updatePlannedBlock = (id: string, updates: Partial<PlannedBlock>) => {
+    setPlannedBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
+    );
+    showNotification('Planned task updated.');
+  };
+
   const togglePlannedBlock = (id: string) => {
     setPlannedBlocks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, completed: !b.completed } : b))
+      prev.map((b) => {
+        if (b.id === id) {
+          const willBeCompleted = !b.completed;
+          return {
+            ...b,
+            completed: willBeCompleted,
+            completedAt: willBeCompleted ? new Date().toISOString() : undefined,
+          };
+        }
+        return b;
+      })
     );
   };
 
@@ -736,16 +772,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  const addHabit = (name: string, category: 'spiritual' | 'general') => {
+  const addHabit = (name: string, category: 'spiritual' | 'general', extra?: Partial<Habit>) => {
+    const today = new Date().toISOString().split('T')[0];
     const newH: Habit = {
       id: `hb_${Date.now()}`,
       name,
       category,
+      lifeCategory: extra?.lifeCategory || (category === 'spiritual' ? 'worship' : 'personal'),
+      priorityTag: extra?.priorityTag || (category === 'spiritual' ? 'sunnah' : 'mubah'),
+      frequency: extra?.frequency || 'daily',
+      targetDaysPerWeek: extra?.targetDaysPerWeek || 7,
+      nameArabic: extra?.nameArabic,
+      description: extra?.description,
       streak: 1,
-      logs: { [new Date().toISOString().split('T')[0]]: true },
+      logs: { [today]: true },
     };
     setHabits((prev) => [...prev, newH]);
     showNotification(`Habit "${name}" created.`);
+  };
+
+  const updateHabit = (id: string, updates: Partial<Habit>) => {
+    setHabits((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, ...updates } : h))
+    );
+    showNotification('Habit updated.');
+  };
+
+  const deleteHabit = (id: string) => {
+    setHabits((prev) => prev.filter((h) => h.id !== id));
+    showNotification('Habit deleted.');
   };
 
   const addTodo = (todo: Omit<TodoItem, 'id'>) => {
@@ -754,9 +809,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showNotification(`Task added with ${todo.priorityTag.toUpperCase()} priority.`);
   };
 
+  const updateTodo = (id: string, updates: Partial<TodoItem>) => {
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    );
+    showNotification('To-do task updated.');
+  };
+
   const toggleTodo = (id: string) => {
     setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      prev.map((t) => {
+        if (t.id === id) {
+          const willBeCompleted = !t.completed;
+          return {
+            ...t,
+            completed: willBeCompleted,
+            completedAt: willBeCompleted ? new Date().toISOString() : undefined,
+          };
+        }
+        return t;
+      })
     );
   };
 
@@ -1070,13 +1142,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateHifzStatus,
         plannedBlocks,
         addPlannedBlock,
+        updatePlannedBlock,
         togglePlannedBlock,
         deletePlannedBlock,
         habits,
         toggleHabit,
         addHabit,
+        updateHabit,
+        deleteHabit,
         todos,
         addTodo,
+        updateTodo,
         toggleTodo,
         deleteTodo,
         ramadanDays,

@@ -248,7 +248,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                 className="px-4 sm:px-5 py-2.5 rounded-xl bg-[#2E8B4F] hover:bg-[#257341] text-white text-xs sm:text-sm font-extrabold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
               >
                 <span>{t('signUp')}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className={`w-3.5 h-3.5 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </button>
             </div>
           ) : (
@@ -300,7 +300,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                   className="px-8 py-4 rounded-2xl bg-[#2E8B4F] hover:bg-[#257341] text-white font-black text-base sm:text-lg shadow-2xl transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-3 cursor-pointer"
                 >
                   <span>{t('getStarted') || 'Start Free Today'}</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className={`w-5 h-5 transition-transform ${rtl ? 'rotate-180' : ''}`} />
                 </button>
 
                 <button
@@ -546,7 +546,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                   className="px-9 py-4 rounded-2xl bg-[#FBBF24] hover:bg-[#e6ad1c] text-[#0B2E1C] font-black text-lg sm:text-xl shadow-2xl transition-transform active:scale-95 cursor-pointer inline-flex items-center gap-2"
                 >
                   <span>Create Your Free Account</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className={`w-5 h-5 transition-transform ${rtl ? 'rotate-180' : ''}`} />
                 </button>
               </div>
             </div>
@@ -866,9 +866,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                 type="submit"
                 className="w-full py-4.5 px-6 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] text-[#FBBF24] font-black text-base sm:text-lg tracking-wide transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-3 border border-[#C89B2E]/40"
               >
-                <Sparkles className="w-5 h-5 text-[#FBBF24]" />
                 <span>{t('completeOnboardingBtn') || 'Bismillah — Begin My Journey'}</span>
-                <ArrowRight className="w-5 h-5 text-[#FBBF24]" />
+                <ArrowRight className={`w-5 h-5 text-[#FBBF24] shrink-0 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </button>
 
             </form>

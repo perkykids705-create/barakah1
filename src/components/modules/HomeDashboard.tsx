@@ -112,7 +112,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             >
               <Clock className="w-4 h-4" />
               <span>{t('fullPrayerTimes')}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className={`w-3.5 h-3.5 transition-transform ${rtl ? 'rotate-180' : ''}`} />
             </button>
 
             <div className="text-[11px] text-[#9FB6A3]/80 bg-[#0B2E1C]/60 px-3 py-1.5 rounded-lg border border-[#123D28]">
@@ -152,7 +152,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             className="self-start sm:self-auto px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#2E8B4F] text-sm font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>{t('manageQadaSunnah')}</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className={`w-4 h-4 transition-transform ${rtl ? 'rotate-180' : ''}`} />
           </button>
         </div>
 
@@ -230,7 +230,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 className="self-start sm:self-auto px-4 py-2 rounded-xl bg-[#DCF0F6] hover:bg-[#cae8f2] text-[#1D7A9C] text-sm font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <span>{t('openDayPlanner')}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className={`w-4 h-4 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
@@ -265,7 +265,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         ? 'bg-emerald-100 text-emerald-900 border border-emerald-300/70'
                         : block.priorityTag === 'wajib'
                         ? 'bg-sky-100 text-sky-900 border border-sky-300/70'
-                        : 'bg-amber-100 text-amber-900 border border-amber-300/70'
+                        : block.priorityTag === 'sunnah'
+                        ? 'bg-teal-100 text-teal-900 border border-teal-300/70'
+                        : block.priorityTag === 'nafl'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300/70'
+                        : 'bg-stone-200 text-stone-800 border border-stone-300/70'
                     }`}
                   >
                     {block.priorityTag}
@@ -293,7 +297,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 className="self-start sm:self-auto px-4 py-2 rounded-xl bg-[#DAF3EC] hover:bg-[#c4ece1] text-[#0E8C74] text-sm font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <span>{t('manageHabits')}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className={`w-4 h-4 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
@@ -356,7 +360,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 className="px-3.5 py-1.5 rounded-xl bg-[#FAF0D8] hover:bg-[#f3e3be] text-[#9A7218] text-sm font-bold transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>{t('logPages')}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className={`w-4 h-4 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
@@ -430,7 +434,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between text-sm sm:text-base font-bold pt-3.5 border-t border-white/20 text-white">
               <span>{t('ramadanBannerTitle')}</span>
               <span className="p-1.5 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors">
-                <ArrowRight className="w-4.5 h-4.5" />
+                <ArrowRight className={`w-4.5 h-4.5 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </span>
             </div>
           </section>
@@ -444,7 +448,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 className="px-3 py-1.5 rounded-xl bg-emerald-50 text-[#2E8B4F] text-xs sm:text-sm font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>{t('navSpiritual')}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className={`w-3.5 h-3.5 transition-transform ${rtl ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
