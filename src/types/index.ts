@@ -140,6 +140,7 @@ export interface Habit {
   lifeCategory?: LifeTaskCategory;
   priorityTag?: IslamicPriority;
   frequency?: 'daily' | 'weekdays' | 'weekends' | 'custom';
+  customDays?: string[]; // e.g. ['Mon', 'Fri']
   targetDaysPerWeek?: number;
   description?: string;
   streak: number;

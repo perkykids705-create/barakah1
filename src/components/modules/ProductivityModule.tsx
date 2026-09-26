@@ -82,13 +82,16 @@ export const ProductivityModule: React.FC = () => {
   const [newDate, setNewDate] = useState<string>(todayStr);
 
   // Rich Habit Form & Modal States
-  const [isAddingHabit, setIsAddingHabit] = useState(false);
+  const ALL_DAYS_LIST = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const [isAddingHabitModal, setIsAddingHabitModal] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitNameArabic, setNewHabitNameArabic] = useState('');
   const [newHabitCat, setNewHabitCat] = useState<'spiritual' | 'general'>('spiritual');
   const [newHabitLifeCat, setNewHabitLifeCat] = useState<LifeTaskCategory>('worship');
   const [newHabitPriority, setNewHabitPriority] = useState<IslamicPriority>('sunnah');
   const [newHabitFrequency, setNewHabitFrequency] = useState<'daily' | 'weekdays' | 'weekends' | 'custom'>('daily');
+  const [newHabitCustomDays, setNewHabitCustomDays] = useState<string[]>(ALL_DAYS_LIST);
   const [newHabitDescription, setNewHabitDescription] = useState('');
 
   // Habit edit modal state
@@ -100,10 +103,17 @@ export const ProductivityModule: React.FC = () => {
     lifeCategory: LifeTaskCategory;
     priorityTag: IslamicPriority;
     frequency: 'daily' | 'weekdays' | 'weekends' | 'custom';
+    customDays: string[];
     description: string;
   } | null>(null);
 
   const [deleteHabitConfirm, setDeleteHabitConfirm] = useState<{ id: string; name: string } | null>(null);
+
+  // Habit Log Protection Consent Modal
+  const [habitConsentModal, setHabitConsentModal] = useState<{
+    habit: typeof habits[0];
+    dateStr: string;
+  } | null>(null);
 
   // Todo form
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -162,6 +172,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'worship' as LifeTaskCategory,
       priorityTag: 'sunnah' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Recite protection and remembrance supplications after Fajr & Asr/Maghrib.',
       icon: '🤲',
     },
@@ -172,6 +183,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'quran' as LifeTaskCategory,
       priorityTag: 'sunnah' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Recite 1 Juz daily to complete a Khatm Quran monthly.',
       icon: '📖',
     },
@@ -182,6 +194,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'worship' as LifeTaskCategory,
       priorityTag: 'sunnah' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Pray 2-8 rak\'ahs in the final third of the night before Fajr.',
       icon: '🌙',
     },
@@ -192,6 +205,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'worship' as LifeTaskCategory,
       priorityTag: 'nafl' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Daily charity for every joint in the body, prayed mid-morning.',
       icon: '☀️',
     },
@@ -202,6 +216,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'worship' as LifeTaskCategory,
       priorityTag: 'sunnah' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Purify heart and invite barakah with daily dhikr.',
       icon: '📿',
     },
@@ -212,6 +227,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'health' as LifeTaskCategory,
       priorityTag: 'mubah' as IslamicPriority,
       frequency: 'weekdays' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
       description: 'Maintain bodily strength as an Amanah from Allah.',
       icon: '🏃',
     },
@@ -222,6 +238,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'personal' as LifeTaskCategory,
       priorityTag: 'nafl' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Spend 15 minutes acquiring sacred knowledge.',
       icon: '📚',
     },
@@ -232,6 +249,7 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: 'family' as LifeTaskCategory,
       priorityTag: 'sunnah' as IslamicPriority,
       frequency: 'daily' as const,
+      customDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       description: 'Gather with family for dinner and spiritual reflection.',
       icon: '👨‍👩‍👧',
     },
@@ -311,6 +329,25 @@ export const ProductivityModule: React.FC = () => {
     setNewTitle('');
   };
 
+  const toggleNewHabitCustomDay = (day: string) => {
+    setNewHabitCustomDays((prev) => {
+      const exists = prev.includes(day);
+      const next = exists ? prev.filter((d) => d !== day) : [...prev, day];
+      if (next.length === 7) setNewHabitFrequency('daily');
+      else if (next.length === 5 && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].every((d) => next.includes(d))) setNewHabitFrequency('weekdays');
+      else if (next.length === 2 && ['Sat', 'Sun'].every((d) => next.includes(d))) setNewHabitFrequency('weekends');
+      else setNewHabitFrequency('custom');
+      return next;
+    });
+  };
+
+  const handleFrequencyChange = (freq: 'daily' | 'weekdays' | 'weekends' | 'custom') => {
+    setNewHabitFrequency(freq);
+    if (freq === 'daily') setNewHabitCustomDays(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+    else if (freq === 'weekdays') setNewHabitCustomDays(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+    else if (freq === 'weekends') setNewHabitCustomDays(['Sat', 'Sun']);
+  };
+
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHabitName.trim()) return;
@@ -319,12 +356,15 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: newHabitLifeCat,
       priorityTag: newHabitPriority,
       frequency: newHabitFrequency,
+      customDays: newHabitCustomDays,
+      targetDaysPerWeek: newHabitCustomDays.length,
       description: newHabitDescription.trim() || undefined,
     });
     setNewHabitName('');
     setNewHabitNameArabic('');
     setNewHabitDescription('');
-    setIsAddingHabit(false);
+    setNewHabitCustomDays(ALL_DAYS_LIST);
+    setIsAddingHabitModal(false);
   };
 
   const handleApplyHabitPreset = (preset: typeof HABIT_PRESETS[0]) => {
@@ -333,6 +373,8 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: preset.lifeCategory,
       priorityTag: preset.priorityTag,
       frequency: preset.frequency,
+      customDays: preset.customDays,
+      targetDaysPerWeek: preset.customDays.length,
       description: preset.description,
     });
   };
@@ -346,7 +388,28 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: habit.lifeCategory || 'worship',
       priorityTag: habit.priorityTag || 'sunnah',
       frequency: habit.frequency || 'daily',
+      customDays: habit.customDays || ALL_DAYS_LIST,
       description: habit.description || '',
+    });
+  };
+
+  const toggleEditHabitCustomDay = (day: string) => {
+    if (!editHabitItem) return;
+    const exists = editHabitItem.customDays.includes(day);
+    const nextDays = exists
+      ? editHabitItem.customDays.filter((d) => d !== day)
+      : [...editHabitItem.customDays, day];
+
+    let nextFreq = editHabitItem.frequency;
+    if (nextDays.length === 7) nextFreq = 'daily';
+    else if (nextDays.length === 5 && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].every((d) => nextDays.includes(d))) nextFreq = 'weekdays';
+    else if (nextDays.length === 2 && ['Sat', 'Sun'].every((d) => nextDays.includes(d))) nextFreq = 'weekends';
+    else nextFreq = 'custom';
+
+    setEditHabitItem({
+      ...editHabitItem,
+      customDays: nextDays,
+      frequency: nextFreq,
     });
   };
 
@@ -360,6 +423,8 @@ export const ProductivityModule: React.FC = () => {
       lifeCategory: editHabitItem.lifeCategory,
       priorityTag: editHabitItem.priorityTag,
       frequency: editHabitItem.frequency,
+      customDays: editHabitItem.customDays,
+      targetDaysPerWeek: editHabitItem.customDays.length,
       description: editHabitItem.description.trim() || undefined,
     });
     setEditHabitItem(null);
@@ -370,6 +435,24 @@ export const ProductivityModule: React.FC = () => {
       deleteHabit(deleteHabitConfirm.id);
       setDeleteHabitConfirm(null);
     }
+  };
+
+  const handleHabitDayClick = (habit: typeof habits[0], dateStr: string, isTargetDay: boolean) => {
+    if (!isTargetDay) return;
+    const isDone = !!habit.logs[dateStr];
+    if (!isDone) {
+      // Uncompleted entry -> Log entry immediately
+      toggleHabit(habit.id, dateStr);
+    } else {
+      // Completed entry -> Protected log entry, show Consent Confirmation modal
+      setHabitConsentModal({ habit, dateStr });
+    }
+  };
+
+  const handleConfirmUnlogHabit = () => {
+    if (!habitConsentModal) return;
+    toggleHabit(habitConsentModal.habit.id, habitConsentModal.dateStr);
+    setHabitConsentModal(null);
   };
 
   const handleAddTodo = (e: React.FormEvent) => {
@@ -956,252 +1039,156 @@ export const ProductivityModule: React.FC = () => {
               </div>
 
               <button
-                onClick={() => setIsAddingHabit(!isAddingHabit)}
-                className="px-5 py-2.5 rounded-2xl bg-[#0E8C74] text-white text-xs sm:text-sm font-bold hover:bg-[#0b705d] transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-2"
+                onClick={() => setIsAddingHabitModal(true)}
+                className="px-5 py-3 rounded-2xl bg-[#0E8C74] text-white text-xs sm:text-sm font-bold hover:bg-[#0b705d] transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 h-4" />
-                <span>{isAddingHabit ? 'Close Form' : 'Add Custom Habit'}</span>
+                <Plus className="w-4.5 h-4.5" />
+                <span>Add Custom Habit</span>
               </button>
             </div>
 
             {/* Quick Presets Bar */}
-            <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 space-y-3">
+            <div className="bg-emerald-50/50 rounded-2xl p-4 sm:p-5 border border-emerald-100 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-[#0E8C74] tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs sm:text-sm font-black uppercase text-[#0E8C74] tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4" />
                   <span>Recommended Sunnah & Daily Presets (1-Click Add)</span>
                 </span>
-                <span className="text-[11px] text-stone-500 font-medium hidden sm:inline">Tap any preset to add instantly</span>
+                <span className="text-xs text-stone-500 font-medium hidden sm:inline">Tap any preset to add instantly</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {HABIT_PRESETS.map((preset, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleApplyHabitPreset(preset)}
-                    className="p-3 rounded-xl bg-white border border-stone-200 hover:border-[#0E8C74] hover:shadow-xs text-left transition-all cursor-pointer group"
+                    className="p-3.5 rounded-2xl bg-white border border-stone-200 hover:border-[#0E8C74] hover:shadow-xs text-left transition-all cursor-pointer group space-y-1"
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{preset.icon}</span>
-                      <span className="text-xs font-extrabold text-[#16241A] group-hover:text-[#0E8C74] line-clamp-1">{preset.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{preset.icon}</span>
+                      <span className="text-xs sm:text-sm font-black text-[#16241A] group-hover:text-[#0E8C74] line-clamp-1">{preset.name}</span>
                     </div>
-                    <p className="text-[11px] text-[#0E8C74] font-arabic font-bold line-clamp-1">{preset.nameArabic}</p>
+                    <p className="text-xs sm:text-sm text-[#0E8C74] font-arabic font-bold line-clamp-1">{preset.nameArabic}</p>
+                    <div className="flex items-center gap-1 pt-0.5">
+                      <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded capitalize">
+                        {preset.frequency}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Expandable Rich Add Habit Form */}
-            {isAddingHabit && (
-              <form onSubmit={handleAddHabit} className="bg-stone-50 p-5 sm:p-6 rounded-2xl border border-stone-200 space-y-4 animate-in fade-in duration-200">
-                <h4 className="text-base font-extrabold text-[#16241A] flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-[#0E8C74]" />
-                  <span>Create Custom Habit</span>
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Habit Name (English/Title)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Morning Adhkar or 8k Steps"
-                      value={newHabitName}
-                      onChange={(e) => setNewHabitName(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#0E8C74] bg-white"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Arabic / Subtitle (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. أذكار الصباح"
-                      value={newHabitNameArabic}
-                      onChange={(e) => setNewHabitNameArabic(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#0E8C74] bg-white font-arabic"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Habit Type</label>
-                    <select
-                      value={newHabitCat}
-                      onChange={(e) => setNewHabitCat(e.target.value as 'spiritual' | 'general')}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
-                    >
-                      <option value="spiritual">Spiritual / Ibadaat</option>
-                      <option value="general">General / Daily</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Life Domain</label>
-                    <select
-                      value={newHabitLifeCat}
-                      onChange={(e) => setNewHabitLifeCat(e.target.value as LifeTaskCategory)}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
-                    >
-                      {LIFE_CATEGORIES.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {t(cat.key)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Islamic Priority</label>
-                    <select
-                      value={newHabitPriority}
-                      onChange={(e) => setNewHabitPriority(e.target.value as IslamicPriority)}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
-                    >
-                      {PRIORITY_TAGS.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {t(p.key)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Frequency Goal</label>
-                    <select
-                      value={newHabitFrequency}
-                      onChange={(e) => setNewHabitFrequency(e.target.value as any)}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
-                    >
-                      <option value="daily">Daily (7 days/wk)</option>
-                      <option value="weekdays">Weekdays (5 days/wk)</option>
-                      <option value="weekends">Weekends (2 days/wk)</option>
-                      <option value="custom">Custom</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Habit Description / Anchor Notes (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Recite after Fajr or pray mid-morning"
-                    value={newHabitDescription}
-                    onChange={(e) => setNewHabitDescription(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-xs font-medium outline-none focus:border-[#0E8C74] bg-white"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingHabit(false)}
-                    className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 text-xs font-bold hover:bg-stone-100 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-[#0E8C74] text-white text-xs font-extrabold hover:bg-[#0b705d] transition-colors cursor-pointer shadow-2xs"
-                  >
-                    Save & Start Habit
-                  </button>
-                </div>
-              </form>
-            )}
-
             {/* Habits Cards Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {habits.map((habit) => {
                 const isDoneToday = !!habit.logs[todayStr];
+                const activeDays = habit.customDays || ALL_DAYS_LIST;
 
                 return (
                   <div
                     key={habit.id}
-                    className={`p-5 rounded-3xl border transition-all space-y-4 ${
+                    className={`p-5 sm:p-6 rounded-3xl border transition-all space-y-4 ${
                       isDoneToday
-                        ? 'bg-emerald-50/40 border-emerald-200 shadow-2xs'
+                        ? 'bg-emerald-50/40 border-emerald-300 shadow-2xs'
                         : 'bg-white border-stone-200 hover:border-stone-300 shadow-xs'
                     }`}
                   >
                     {/* Card Top Header */}
                     <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-base sm:text-lg font-black text-[#16241A]">{habit.name}</h4>
+                          <h4 className="text-lg sm:text-xl font-black text-[#16241A] leading-tight">{habit.name}</h4>
                           {habit.nameArabic && (
-                            <span className="text-sm font-bold text-[#0E8C74] font-arabic bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                            <span className="text-base sm:text-lg font-bold text-[#0E8C74] font-arabic bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
                               {habit.nameArabic}
                             </span>
                           )}
                         </div>
+
                         {habit.description && (
-                          <p className="text-xs text-stone-500 font-medium leading-relaxed">{habit.description}</p>
+                          <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">{habit.description}</p>
                         )}
+
                         <div className="flex flex-wrap items-center gap-2 pt-1">
                           {getCategoryBadge(habit.lifeCategory || (habit.category === 'spiritual' ? 'worship' : 'personal'))}
                           {getPriorityBadge(habit.priorityTag || (habit.category === 'spiritual' ? 'sunnah' : 'mubah'))}
-                          <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200 capitalize">
-                            {habit.frequency || 'daily'}
+                          <span className="text-xs font-bold text-stone-700 bg-stone-100 px-2.5 py-1 rounded-lg border border-stone-200 flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-[#0E8C74]" />
+                            <span>
+                              {activeDays.length === 7
+                                ? 'Daily (Mon-Sun)'
+                                : `Active: ${activeDays.join(', ')}`}
+                            </span>
                           </span>
                         </div>
                       </div>
 
                       {/* Action buttons & Streak */}
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#9A7218] bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-300/80">
+                        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-[#9A7218] bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-300">
                           <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
-                          <span>{habit.streak}d</span>
+                          <span>{habit.streak}d streak</span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleOpenEditHabitModal(habit)}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-[#0E8C74] hover:bg-stone-100 transition-colors cursor-pointer"
+                            className="p-2 rounded-xl text-stone-500 hover:text-[#0E8C74] hover:bg-stone-100 transition-colors cursor-pointer"
                             title="Edit Habit"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
+                            <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeleteHabitConfirm({ id: habit.id, name: habit.name })}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                            className="p-2 rounded-xl text-stone-500 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                             title="Delete Habit"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Interactive 7-Day Matrix */}
-                    <div className="bg-stone-50/80 rounded-2xl p-3 border border-stone-200/80">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-extrabold text-stone-500 uppercase tracking-wider">7-Day Consistency Tracker</span>
-                        <span className="text-[11px] font-semibold text-[#0E8C74]">Tap day to toggle log</span>
+                    {/* Interactive 7-Day Consistency Matrix */}
+                    <div className="bg-stone-50/90 rounded-2xl p-3.5 sm:p-4 border border-stone-200">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-xs font-black text-stone-700 uppercase tracking-wider">7-Day Consistency Tracker</span>
+                        <span className="text-xs font-bold text-[#0E8C74]">Tap day to toggle log</span>
                       </div>
-                      <div className="grid grid-cols-7 gap-1.5">
+                      <div className="grid grid-cols-7 gap-2">
                         {weekDaysList.map((day) => {
                           const isDoneOnDay = !!habit.logs[day.dateStr];
+                          const isTargetDay = activeDays.includes(day.dayLabel);
+
                           return (
                             <button
                               key={day.dateStr}
-                              onClick={() => toggleHabit(habit.id, day.dateStr)}
-                              className={`flex flex-col items-center justify-center p-2 rounded-xl text-center transition-all cursor-pointer border ${
-                                isDoneOnDay
-                                  ? 'bg-[#0E8C74] text-white border-[#0E8C74] shadow-2xs'
+                              disabled={!isTargetDay}
+                              onClick={() => handleHabitDayClick(habit, day.dateStr, isTargetDay)}
+                              className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl text-center transition-all border ${
+                                !isTargetDay
+                                  ? 'bg-stone-100/60 border-stone-200/80 text-stone-400 cursor-not-allowed opacity-50'
+                                  : isDoneOnDay
+                                  ? 'bg-[#0E8C74] text-white border-[#0E8C74] shadow-xs cursor-pointer'
                                   : day.isToday
-                                  ? 'bg-white border-[#0E8C74] text-[#16241A] font-extrabold'
-                                  : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                                  ? 'bg-white border-2 border-[#0E8C74] text-[#16241A] font-extrabold shadow-2xs cursor-pointer'
+                                  : 'bg-white border-stone-300 text-stone-800 hover:border-[#0E8C74] cursor-pointer'
                               }`}
-                              title={`${day.dateStr} - Click to toggle log`}
+                              title={
+                                !isTargetDay
+                                  ? `${day.dayLabel} is an Off Day (Not scheduled for this habit)`
+                                  : `${day.dateStr} (${day.dayLabel}) - Click to toggle completion`
+                              }
                             >
-                              <span className="text-[10px] uppercase font-bold opacity-80">{day.dayLabel}</span>
-                              <span className="text-xs font-black">{day.dayNum}</span>
+                              <span className="text-[11px] uppercase font-black tracking-tight">{day.dayLabel}</span>
+                              <span className="text-xs sm:text-sm font-black mt-0.5">{day.dayNum}</span>
                               <div className="mt-1">
                                 {isDoneOnDay ? (
-                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  <Check className="w-4 h-4 stroke-[3]" />
+                                ) : !isTargetDay ? (
+                                  <span className="text-[10px] font-bold text-stone-400 leading-none">Off</span>
                                 ) : (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block" />
+                                  <span className="w-2 h-2 rounded-full bg-stone-300 inline-block" />
                                 )}
                               </div>
                             </button>
@@ -1660,7 +1647,7 @@ export const ProductivityModule: React.FC = () => {
       {/* EDIT HABIT MODAL */}
       {editHabitItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-stone-200 text-[#16241A] relative">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-stone-200 text-[#16241A] relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setEditHabitItem(null)}
               className="absolute top-5 right-5 p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
@@ -1668,7 +1655,7 @@ export const ProductivityModule: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            <h4 className="text-lg font-extrabold text-[#16241A] mb-4 flex items-center gap-2">
+            <h4 className="text-xl font-extrabold text-[#16241A] mb-4 flex items-center gap-2">
               <Edit3 className="w-5 h-5 text-[#0E8C74]" />
               <span>Edit Habit</span>
             </h4>
@@ -1696,7 +1683,19 @@ export const ProductivityModule: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Type</label>
+                  <select
+                    value={editHabitItem.category}
+                    onChange={(e) => setEditHabitItem({ ...editHabitItem, category: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
+                  >
+                    <option value="spiritual">Spiritual / Ibadaat</option>
+                    <option value="general">General / Daily</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Life Category</label>
                   <select
@@ -1728,32 +1727,32 @@ export const ProductivityModule: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Type</label>
-                  <select
-                    value={editHabitItem.category}
-                    onChange={(e) => setEditHabitItem({ ...editHabitItem, category: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
-                  >
-                    <option value="spiritual">Spiritual / Ibadaat</option>
-                    <option value="general">General / Daily</option>
-                  </select>
+              {/* Custom Active Days Selection in Edit Modal */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Scheduled Active Days</label>
+                <div className="grid grid-cols-7 gap-2 bg-stone-50 p-3 rounded-2xl border border-stone-200">
+                  {ALL_DAYS_LIST.map((day) => {
+                    const isSelected = editHabitItem.customDays.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => toggleEditHabitCustomDay(day)}
+                        className={`py-2 px-1 rounded-xl text-xs font-black transition-all cursor-pointer border flex flex-col items-center gap-1 ${
+                          isSelected
+                            ? 'bg-[#0E8C74] text-white border-[#0E8C74] shadow-xs'
+                            : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
+                        }`}
+                      >
+                        <span>{day}</span>
+                        {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <span className="w-1.5 h-1.5 rounded-full bg-stone-300" />}
+                      </button>
+                    );
+                  })}
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Frequency</label>
-                  <select
-                    value={editHabitItem.frequency}
-                    onChange={(e) => setEditHabitItem({ ...editHabitItem, frequency: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
-                  >
-                    <option value="daily">Daily (7d/wk)</option>
-                    <option value="weekdays">Weekdays (5d/wk)</option>
-                    <option value="weekends">Weekends (2d/wk)</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </div>
+                <p className="text-[11px] text-stone-500 font-medium mt-1">
+                  Active Days ({editHabitItem.customDays.length}/7): {editHabitItem.customDays.length === 0 ? 'None' : editHabitItem.customDays.join(', ')}
+                </p>
               </div>
 
               <div>
@@ -1762,11 +1761,11 @@ export const ProductivityModule: React.FC = () => {
                   type="text"
                   value={editHabitItem.description}
                   onChange={(e) => setEditHabitItem({ ...editHabitItem, description: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-xs font-medium outline-none focus:border-[#0E8C74]"
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm font-medium outline-none focus:border-[#0E8C74]"
                 />
               </div>
 
-              <div className="flex items-center gap-3 pt-3">
+              <div className="flex items-center gap-3 pt-3 border-t border-stone-200">
                 <button
                   type="button"
                   onClick={() => setEditHabitItem(null)}
@@ -1779,6 +1778,182 @@ export const ProductivityModule: React.FC = () => {
                   className="flex-1 py-3 rounded-xl bg-[#0E8C74] hover:bg-[#0b705d] text-white font-extrabold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs"
                 >
                   Save Habit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW HABIT MODAL */}
+      {isAddingHabitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-stone-200 text-[#16241A] relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIsAddingHabitModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#0E8C74] flex items-center justify-center shrink-0">
+                <Plus className="w-6 h-6 stroke-[3]" />
+              </div>
+              <div>
+                <h4 className="text-xl font-extrabold text-[#16241A]">Add Custom Habit</h4>
+                <p className="text-xs sm:text-sm text-stone-500 font-medium">Define your spiritual or personal daily routine</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddHabit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Habit Name (English / Title)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Morning Adhkar or 8k Steps"
+                    value={newHabitName}
+                    onChange={(e) => setNewHabitName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#0E8C74] bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Arabic Subtitle (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. أذكار الصباح"
+                    value={newHabitNameArabic}
+                    onChange={(e) => setNewHabitNameArabic(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#0E8C74] bg-white font-arabic"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Habit Type</label>
+                  <select
+                    value={newHabitCat}
+                    onChange={(e) => setNewHabitCat(e.target.value as 'spiritual' | 'general')}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm font-bold outline-none bg-white"
+                  >
+                    <option value="spiritual">Spiritual / Ibadaat</option>
+                    <option value="general">General / Daily</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Life Domain</label>
+                  <select
+                    value={newHabitLifeCat}
+                    onChange={(e) => setNewHabitLifeCat(e.target.value as LifeTaskCategory)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm font-bold outline-none bg-white"
+                  >
+                    {LIFE_CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {t(cat.key)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Islamic Priority</label>
+                  <select
+                    value={newHabitPriority}
+                    onChange={(e) => setNewHabitPriority(e.target.value as IslamicPriority)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm font-bold outline-none bg-white"
+                  >
+                    {PRIORITY_TAGS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {t(p.key)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Custom Active Days Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-stone-700">Scheduled Active Days</label>
+                  <div className="flex items-center gap-1.5 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => handleFrequencyChange('daily')}
+                      className={`px-2.5 py-1 rounded-lg transition-colors ${newHabitFrequency === 'daily' ? 'bg-[#0E8C74] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                    >
+                      All Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFrequencyChange('weekdays')}
+                      className={`px-2.5 py-1 rounded-lg transition-colors ${newHabitFrequency === 'weekdays' ? 'bg-[#0E8C74] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                    >
+                      Weekdays
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFrequencyChange('weekends')}
+                      className={`px-2.5 py-1 rounded-lg transition-colors ${newHabitFrequency === 'weekends' ? 'bg-[#0E8C74] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                    >
+                      Weekends
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2 bg-stone-50 p-3 rounded-2xl border border-stone-200">
+                  {ALL_DAYS_LIST.map((day) => {
+                    const isSelected = newHabitCustomDays.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => toggleNewHabitCustomDay(day)}
+                        className={`py-2.5 px-1 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer border flex flex-col items-center gap-1 ${
+                          isSelected
+                            ? 'bg-[#0E8C74] text-white border-[#0E8C74] shadow-xs'
+                            : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
+                        }`}
+                      >
+                        <span>{day}</span>
+                        {isSelected ? <Check className="w-4 h-4 stroke-[3]" /> : <span className="w-1.5 h-1.5 rounded-full bg-stone-300" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-stone-500 font-medium mt-1">
+                  Selected ({newHabitCustomDays.length}/7 days): {newHabitCustomDays.length === 0 ? 'None selected' : newHabitCustomDays.join(', ')}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Habit Description / Anchor Notes (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Recite after Fajr or pray mid-morning"
+                  value={newHabitDescription}
+                  onChange={(e) => setNewHabitDescription(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:border-[#0E8C74] bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingHabitModal(false)}
+                  className="px-5 py-3 rounded-2xl border border-stone-200 text-stone-700 text-xs sm:text-sm font-bold hover:bg-stone-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-2xl bg-[#0E8C74] text-white text-xs sm:text-sm font-extrabold hover:bg-[#0b705d] transition-colors cursor-pointer shadow-xs"
+                >
+                  Create Habit
                 </button>
               </div>
             </form>
@@ -1810,6 +1985,84 @@ export const ProductivityModule: React.FC = () => {
               >
                 Delete Habit
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HABIT LOG CONSENT & PROTECTION MODAL */}
+      {habitConsentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-stone-200 text-[#16241A] relative">
+            <button
+              onClick={() => setHabitConsentModal(null)}
+              className="absolute top-5 right-5 p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#0E8C74] flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-lg font-extrabold text-[#16241A] leading-tight">
+                  Logged Habit Entry Locked
+                </h4>
+                <p className="text-xs font-semibold text-[#0E8C74]">Recorded in Daily Routine Ledger</p>
+              </div>
+            </div>
+
+            <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 mb-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm sm:text-base font-extrabold text-[#16241A]">{habitConsentModal.habit.name}</p>
+                {habitConsentModal.habit.nameArabic && (
+                  <p className="text-xs font-bold text-[#0E8C74] font-arabic">{habitConsentModal.habit.nameArabic}</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {getCategoryBadge(habitConsentModal.habit.lifeCategory || (habitConsentModal.habit.category === 'spiritual' ? 'worship' : 'personal'))}
+                {getPriorityBadge(habitConsentModal.habit.priorityTag || (habitConsentModal.habit.category === 'spiritual' ? 'sunnah' : 'mubah'))}
+                <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
+                  Date: {habitConsentModal.dateStr}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-600 font-medium mb-6 leading-relaxed">
+              This habit completion entry is already recorded in your streak history. Unmarking or removing this completed entry requires your explicit confirmation to protect streak consistency.
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => setHabitConsentModal(null)}
+                className="w-full py-3 px-4 rounded-xl bg-[#0B2E1C] hover:bg-[#123D28] text-[#FBBF24] font-black text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-2xs"
+              >
+                <Check className="w-4 h-4" />
+                <span>Keep Completed & Locked</span>
+              </button>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => {
+                    const h = habitConsentModal.habit;
+                    setHabitConsentModal(null);
+                    handleOpenEditHabitModal(h);
+                  }}
+                  className="py-2.5 px-3 rounded-xl border border-stone-200 hover:border-[#0E8C74] bg-white text-stone-800 font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-[#0E8C74]" />
+                  <span>Edit Habit</span>
+                </button>
+
+                <button
+                  onClick={handleConfirmUnlogHabit}
+                  className="py-2.5 px-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Unmark Entry</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
