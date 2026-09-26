@@ -864,9 +864,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-4 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] text-[#FBBF24] font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:shadow-2xl cursor-pointer"
+                className="w-full py-4.5 px-6 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] text-[#FBBF24] font-black text-base sm:text-lg tracking-wide transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-3 border border-[#C89B2E]/40"
               >
-                {t('completeOnboardingBtn') || 'Complete Setup & Enter Platform'}
+                <Sparkles className="w-5 h-5 text-[#FBBF24]" />
+                <span>{t('completeOnboardingBtn') || 'Bismillah — Begin My Journey'}</span>
+                <ArrowRight className="w-5 h-5 text-[#FBBF24]" />
               </button>
 
             </form>
