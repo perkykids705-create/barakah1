@@ -698,9 +698,9 @@ export const ProductivityModule: React.FC = () => {
 
       {/* 2. TAB 1: PRAYER-ANCHORED DAY PLANNER */}
       {activeTab === 'planner' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Main schedule timeline */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-4">
             <div className="bg-white rounded-3xl p-5 sm:p-7 border border-stone-200 shadow-xs">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -915,26 +915,17 @@ export const ProductivityModule: React.FC = () => {
 
           {/* Add block sidebar form */}
           <div className="bg-white rounded-3xl p-5 sm:p-7 border border-stone-200 shadow-xs h-fit">
-            <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-[#1D7A9C]" />
-              <span>{t('addTask')}</span>
-            </h4>
+            <div className="flex items-center justify-between mb-5 pb-3 border-b border-stone-100">
+              <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] flex items-center gap-2">
+                <Plus className="w-5 h-5 text-[#1D7A9C]" />
+                <span>{t('addTask')}</span>
+              </h4>
+              <span className="text-xs font-semibold text-[#1D7A9C] bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100 hidden sm:inline-block">
+                Prayer-Anchored
+              </span>
+            </div>
 
             <form onSubmit={handleAddBlock} className="space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5 flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-[#1D7A9C]" />
-                  <span>Task Date</span>
-                </label>
-                <input
-                  type="date"
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C]"
-                  required
-                />
-              </div>
-
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">{t('taskTitleLabel')}</label>
                 <input
@@ -942,34 +933,50 @@ export const ProductivityModule: React.FC = () => {
                   placeholder={t('taskPlaceholder')}
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C]"
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C] bg-white shadow-2xs"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">{t('prayerAnchorLabel')}</label>
-                <select
-                  value={newAnchor}
-                  onChange={(e) => setNewAnchor(e.target.value as PrayerName)}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C] bg-white"
-                >
-                  <option value="Fajr">{t('Fajr')}</option>
-                  <option value="Dhuhr">{t('Dhuhr')}</option>
-                  <option value="Asr">{t('Asr')}</option>
-                  <option value="Maghrib">{t('Maghrib')}</option>
-                  <option value="Isha">{t('Isha')}</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-[#1D7A9C]" />
+                    <span>Task Date</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#1D7A9C] bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">{t('prayerAnchorLabel')}</label>
+                  <select
+                    value={newAnchor}
+                    onChange={(e) => setNewAnchor(e.target.value as PrayerName)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#1D7A9C] bg-white"
+                  >
+                    <option value="Fajr">{t('Fajr')}</option>
+                    <option value="Dhuhr">{t('Dhuhr')}</option>
+                    <option value="Asr">{t('Asr')}</option>
+                    <option value="Maghrib">{t('Maghrib')}</option>
+                    <option value="Isha">{t('Isha')}</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">{t('offsetMinutesLabel')}</label>
                   <input
                     type="number"
                     value={newOffset}
                     onChange={(e) => setNewOffset(Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none"
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#1D7A9C] bg-white"
                   />
                   <span className="text-[11px] text-stone-500 font-medium mt-1 block">+after, -before</span>
                 </div>
@@ -979,48 +986,51 @@ export const ProductivityModule: React.FC = () => {
                     type="number"
                     value={newDuration}
                     onChange={(e) => setNewDuration(Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none"
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#1D7A9C] bg-white"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">
-                  {t('lifeCategoryLabel')}
-                </label>
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value as LifeTaskCategory)}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C] bg-white"
-                >
-                  {LIFE_CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {t(cat.key)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">
+                    {t('lifeCategoryLabel')}
+                  </label>
+                  <select
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value as LifeTaskCategory)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-semibold outline-none focus:border-[#1D7A9C] bg-white"
+                  >
+                    {LIFE_CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {t(cat.key)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">{t('priorityTagLabel')}</label>
-                <select
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as IslamicPriority)}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C] bg-white"
-                >
-                  {PRIORITY_TAGS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {t(p.key)}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-stone-700 mb-1.5">{t('priorityTagLabel')}</label>
+                  <select
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as IslamicPriority)}
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm sm:text-base font-semibold outline-none focus:border-[#1D7A9C] bg-white"
+                  >
+                    {PRIORITY_TAGS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {t(p.key)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-2xl bg-[#1D7A9C] hover:bg-[#15607a] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                className="w-full py-3.5 rounded-2xl bg-[#1D7A9C] hover:bg-[#15607a] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2 mt-2"
               >
-                {t('addTask')}
+                <Plus className="w-5 h-5 stroke-[3]" />
+                <span>{t('addTask')}</span>
               </button>
             </form>
           </div>
