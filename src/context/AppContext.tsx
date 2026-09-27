@@ -110,6 +110,9 @@ interface AppContextType {
   addSadaqah: (entry: Omit<SadaqahEntry, 'id'>) => void;
   charityGoal: CharityGoal;
   updateCharityGoal: (goal: Partial<CharityGoal>) => void;
+  charityGoals: CharityGoal[];
+  startCharityGoal: (goal: Omit<CharityGoal, 'id'>) => void;
+  deleteCharityGoal: (id: string) => void;
 
   // Reflection & Tasbih
   dhikrPresets: DhikrPreset[];
@@ -405,11 +408,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     { id: 's2', date: '2026-09-24', amount: 30, cause: 'Orphan Sponsorship Support', recipient: 'Local Community Waqf', note: 'Monthly pledge fulfilled', currency: 'USD' },
   ]);
 
-  const [charityGoal, setCharityGoal] = useState<CharityGoal>({
-    targetAmount: 1200,
-    period: 'annual',
-    currentAmount: 480,
-    currency: 'USD',
+  const [charityGoal, setCharityGoal] = useState<CharityGoal>(() => {
+    const saved = localStorage.getItem('bd_charity_goal');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      id: 'goal_annual_2026',
+      title: 'Annual Sadaqah & Giving Goal',
+      targetAmount: 1200,
+      period: 'annual',
+      currentAmount: 480,
+      currency: 'USD',
+      startDate: '2026-01-01',
+      targetDate: '2026-12-31',
+      category: 'Sadaqah Jariyah',
+      notes: 'Continuous voluntary charity throughout the year to purify wealth and earn ongoing barakah.',
+      status: 'active',
+    };
+  });
+
+  const [charityGoals, setCharityGoals] = useState<CharityGoal[]>(() => {
+    const saved = localStorage.getItem('bd_charity_goals_list');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      {
+        id: 'goal_annual_2026',
+        title: 'Annual Sadaqah & Giving Goal',
+        targetAmount: 1200,
+        period: 'annual',
+        currentAmount: 480,
+        currency: 'USD',
+        startDate: '2026-01-01',
+        targetDate: '2026-12-31',
+        category: 'Sadaqah Jariyah',
+        notes: 'Purifying wealth through continuous voluntary giving throughout the year.',
+        status: 'active',
+      },
+      {
+        id: 'goal_water_well',
+        title: 'Community Clean Water Well Project',
+        targetAmount: 850,
+        period: 'campaign',
+        currentAmount: 350,
+        currency: 'USD',
+        startDate: '2026-09-01',
+        targetDate: '2026-11-30',
+        category: 'Water & Sanitation',
+        notes: 'Sadaqah Jariyah well for a community without clean water.',
+        status: 'active',
+      },
+    ];
   });
 
   // Reflection & Tasbih
@@ -896,8 +951,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateCharityGoal = (goal: Partial<CharityGoal>) => {
-    setCharityGoal((prev) => ({ ...prev, ...goal }));
+    setCharityGoal((prev) => {
+      const updated = { ...prev, ...goal };
+      localStorage.setItem('bd_charity_goal', JSON.stringify(updated));
+      return updated;
+    });
+    setCharityGoals((prev) => {
+      const targetId = goal.id || charityGoal.id;
+      const updatedList = prev.map((g) => (g.id === targetId ? { ...g, ...goal } : g));
+      localStorage.setItem('bd_charity_goals_list', JSON.stringify(updatedList));
+      return updatedList;
+    });
     showNotification('Charity goal updated.');
+  };
+
+  const startCharityGoal = (goal: Omit<CharityGoal, 'id'>) => {
+    const newG: CharityGoal = {
+      ...goal,
+      id: `cg_${Date.now()}`,
+      status: 'active',
+      startDate: goal.startDate || new Date().toISOString().split('T')[0],
+      currentAmount: goal.currentAmount || 0,
+      currency: goal.currency || 'USD',
+    };
+    setCharityGoal(newG);
+    setCharityGoals((prev) => {
+      const updatedList = [newG, ...prev];
+      localStorage.setItem('bd_charity_goals_list', JSON.stringify(updatedList));
+      return updatedList;
+    });
+    localStorage.setItem('bd_charity_goal', JSON.stringify(newG));
+    showNotification(`New Charity Goal "${newG.title}" started successfully!`);
+  };
+
+  const deleteCharityGoal = (id: string) => {
+    setCharityGoals((prev) => {
+      const updatedList = prev.filter((g) => g.id !== id);
+      localStorage.setItem('bd_charity_goals_list', JSON.stringify(updatedList));
+      return updatedList;
+    });
+    showNotification('Charity goal removed.');
   };
 
   // Tasbih
@@ -1177,6 +1270,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addSadaqah,
         charityGoal,
         updateCharityGoal,
+        charityGoals,
+        startCharityGoal,
+        deleteCharityGoal,
         dhikrPresets,
         tasbihCount,
         currentDhikrKey,

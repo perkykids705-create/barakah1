@@ -286,10 +286,17 @@ export interface SadaqahEntry {
 }
 
 export interface CharityGoal {
+  id?: string;
+  title?: string;
   targetAmount: number;
-  period: 'monthly' | 'annual';
+  period: 'monthly' | 'annual' | 'campaign';
   currentAmount: number;
   currency: string;
+  startDate?: string;
+  targetDate?: string;
+  category?: string;
+  notes?: string;
+  status?: 'active' | 'completed' | 'paused';
 }
 
 export interface GroupKhatmTask {

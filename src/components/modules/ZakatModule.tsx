@@ -11,6 +11,16 @@ import {
   TrendingUp,
   History,
   Info,
+  Calendar,
+  Target,
+  Sparkles,
+  CheckCircle2,
+  Trash2,
+  Edit3,
+  Clock,
+  X,
+  Gift,
+  Check,
 } from 'lucide-react';
 
 export const ZakatModule: React.FC = () => {
@@ -22,6 +32,9 @@ export const ZakatModule: React.FC = () => {
     addSadaqah,
     charityGoal,
     updateCharityGoal,
+    charityGoals,
+    startCharityGoal,
+    deleteCharityGoal,
   } = useApp();
 
   const t = useTranslation(language);
@@ -45,6 +58,36 @@ export const ZakatModule: React.FC = () => {
   const [sadaqahCause, setSadaqahCause] = useState('');
   const [sadaqahRecipient, setSadaqahRecipient] = useState('');
   const [sadaqahNote, setSadaqahNote] = useState('');
+
+  // Charity Goals Workflow State
+  const [showStartGoalModal, setShowStartGoalModal] = useState(false);
+  const [showContributeModal, setShowContributeModal] = useState(false);
+  const [showEditGoalModal, setShowEditGoalModal] = useState(false);
+
+  // New Goal Fields
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [newGoalTitle, setNewGoalTitle] = useState('');
+  const [newGoalCategory, setNewGoalCategory] = useState('Sadaqah Jariyah');
+  const [newGoalPeriod, setNewGoalPeriod] = useState<'annual' | 'monthly' | 'campaign'>('campaign');
+  const [newGoalStartDate, setNewGoalStartDate] = useState(todayStr);
+  const [newGoalTargetDate, setNewGoalTargetDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 90);
+    return d.toISOString().split('T')[0];
+  });
+  const [newGoalStartingAmount, setNewGoalStartingAmount] = useState<number>(0);
+  const [newGoalTargetAmount, setNewGoalTargetAmount] = useState<number>(1000);
+  const [newGoalNotes, setNewGoalNotes] = useState('');
+
+  // Quick Contribute to Active Goal
+  const [contributeAmount, setContributeAmount] = useState<number>(50);
+  const [contributeNote, setContributeNote] = useState('');
+  const [contributeRecipient, setContributeRecipient] = useState('Charity Foundation');
+
+  // Edit Goal Target State
+  const [editTargetAmount, setEditTargetAmount] = useState<number>(charityGoal.targetAmount || 1200);
+  const [editGoalTitle, setEditGoalTitle] = useState<string>(charityGoal.title || 'Annual Sadaqah Goal');
+  const [editGoalTargetDate, setEditGoalTargetDate] = useState<string>(charityGoal.targetDate || '2026-12-31');
 
   // Calculations
   const goldTotal = goldGrams * goldPrice;
@@ -480,42 +523,703 @@ export const ZakatModule: React.FC = () => {
         </div>
       )}
 
-      {/* 4. TAB 3: CHARITY GOALS */}
+      {/* 4. TAB 3: CHARITY GOAL TRACKER & CAMPAIGNS */}
       {activeTab === 'goals' && (
-        <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs max-w-xl mx-auto space-y-6">
-          <h4 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">Annual Giving Goal</h4>
-          <p className="text-sm sm:text-base text-stone-600 font-medium">Set an intentional target for your charitable contributions</p>
-
-          <div className="space-y-4">
-            <div className="flex justify-between items-end">
-              <div>
-                <span className="text-xs sm:text-sm font-semibold text-stone-500">Current Progress</span>
-                <p className="text-3xl sm:text-4xl font-black text-[#C1541F] tabular-nums mt-0.5">
-                  ${charityGoal.currentAmount} / ${charityGoal.targetAmount}
-                </p>
+        <div className="space-y-6">
+          {/* Header Bar */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-[#C1541F] uppercase tracking-wider mb-1">
+                <Heart className="w-4 h-4" />
+                <span>Intentional Philanthropy & Sadaqah Jariyah</span>
               </div>
-              <span className="text-base sm:text-lg font-black text-[#16241A]">{goalPercent}%</span>
+              <h3 className="text-2xl sm:text-3xl font-black text-[#16241A] tracking-tight">
+                Charity Goal Tracker & Campaigns
+              </h3>
+              <p className="text-sm sm:text-base text-stone-600 font-medium mt-1">
+                Set intentional starting dates and deadlines to monitor your charitable journey with purpose and barakah.
+              </p>
             </div>
 
-            <div className="w-full bg-stone-100 rounded-full h-4 overflow-hidden border border-stone-200/60">
-              <div
-                className="bg-[#C1541F] h-full rounded-full transition-all duration-500"
-                style={{ width: `${goalPercent}%` }}
-              />
+            {/* Action: Start New Goal */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setNewGoalTitle('');
+                  setNewGoalStartingAmount(0);
+                  setNewGoalTargetAmount(1000);
+                  setNewGoalStartDate(todayStr);
+                  setShowStartGoalModal(true);
+                }}
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#C1541F] hover:bg-[#a94515] text-white font-extrabold text-sm sm:text-base shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5 stroke-[2.5]" />
+                <span>+ Start New Charity Goal</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ACTIVE GOAL HERO SHOWCASE */}
+          <div className="bg-gradient-to-br from-white via-amber-50/20 to-orange-50/30 rounded-3xl p-6 sm:p-8 border-2 border-[#C1541F]/30 shadow-md space-y-6 relative overflow-hidden">
+            {/* Top decorative badge & title */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200/80 pb-5">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#C1541F] text-white shadow-2xs">
+                    ● Active Giving Goal
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-stone-100 text-stone-700 border border-stone-200">
+                    {charityGoal.category || 'General Sadaqah'}
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold text-stone-500 bg-white border border-stone-200">
+                    {charityGoal.period === 'annual' ? 'Annual Target' : charityGoal.period === 'monthly' ? 'Monthly Target' : 'Special Campaign'}
+                  </span>
+                </div>
+                <h4 className="text-2xl sm:text-3xl font-black text-[#16241A] tracking-tight">
+                  {charityGoal.title || 'Annual Sadaqah & Giving Goal'}
+                </h4>
+              </div>
+
+              {/* Start Date & Target Deadline timeline badge */}
+              <div className="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-2xs flex items-center gap-4 text-xs font-bold self-start md:self-center">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#C1541F]" />
+                  <div>
+                    <span className="block text-stone-400 uppercase text-xxs font-extrabold">Goal Started</span>
+                    <span className="text-stone-800 font-black">{charityGoal.startDate || 'Jan 1, 2026'}</span>
+                  </div>
+                </div>
+                <div className="h-6 w-px bg-stone-200" />
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <div>
+                    <span className="block text-stone-400 uppercase text-xxs font-extrabold">Target Deadline</span>
+                    <span className="text-stone-800 font-black">{charityGoal.targetDate || 'Dec 31, 2026'}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-5 border-t border-stone-200/80">
-              <label className="block text-sm font-bold text-stone-700 mb-1.5">Adjust Target Goal ($)</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={charityGoal.targetAmount}
-                  onChange={(e) => updateCharityGoal({ targetAmount: Number(e.target.value) })}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
+            {/* Financial Progress Block */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <span className="text-xs sm:text-sm font-extrabold text-stone-500 uppercase tracking-wider">
+                    Total Funds Contributed / Goal Target
+                  </span>
+                  <p className="text-3xl sm:text-4xl font-black text-[#C1541F] tabular-nums mt-1 tracking-tight">
+                    ${charityGoal.currentAmount.toLocaleString()}
+                    <span className="text-xl sm:text-2xl text-stone-400 font-bold">
+                      {' '}/ ${charityGoal.targetAmount.toLocaleString()} USD
+                    </span>
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl sm:text-3xl font-black text-stone-900">
+                    {goalPercent}%
+                  </span>
+                  <span className="text-xs font-extrabold text-stone-500 uppercase">
+                    Achieved
+                  </span>
+                </div>
+              </div>
+
+              {/* High fidelity progress bar */}
+              <div className="w-full bg-stone-100 rounded-full h-4 overflow-hidden border border-stone-200/80 p-0.5 shadow-inner">
+                <div
+                  className="bg-gradient-to-r from-[#C1541F] to-[#E07A5F] h-full rounded-full transition-all duration-500 shadow-sm"
+                  style={{ width: `${goalPercent}%` }}
                 />
+              </div>
+
+              {/* Remaining calculation & milestones */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-stone-600 pt-1">
+                <span>
+                  {charityGoal.currentAmount >= charityGoal.targetAmount ? (
+                    <strong className="text-emerald-700 font-black">🎉 Goal Target Achieved! Alhamdulillah.</strong>
+                  ) : (
+                    <span>
+                      <strong className="text-[#C1541F]">${(charityGoal.targetAmount - charityGoal.currentAmount).toLocaleString()} USD</strong> remaining to reach goal
+                    </span>
+                  )}
+                </span>
+                
+                <div className="flex items-center gap-3 text-stone-400">
+                  <span className={goalPercent >= 25 ? 'text-[#C1541F] font-black' : ''}>25%</span>
+                  <span>·</span>
+                  <span className={goalPercent >= 50 ? 'text-[#C1541F] font-black' : ''}>50%</span>
+                  <span>·</span>
+                  <span className={goalPercent >= 75 ? 'text-[#C1541F] font-black' : ''}>75%</span>
+                  <span>·</span>
+                  <span className={goalPercent >= 100 ? 'text-emerald-600 font-black' : ''}>100%</span>
+                </div>
+              </div>
+
+              {charityGoal.notes && (
+                <div className="mt-3 p-3.5 rounded-2xl bg-white/80 border border-stone-200 text-xs sm:text-sm text-stone-600 italic">
+                  <span className="font-extrabold text-stone-800 not-italic">Niyyah & Purpose: </span>
+                  "{charityGoal.notes}"
+                </div>
+              )}
+            </div>
+
+            {/* Hero Quick Action Buttons */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-stone-200/80">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowContributeModal(true)}
+                  className="px-5 py-3 rounded-2xl bg-[#2E8B4F] hover:bg-[#257341] text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-xs cursor-pointer flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4 stroke-[3px]" />
+                  <span>+ Log Contribution to this Goal</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditTargetAmount(charityGoal.targetAmount);
+                    setEditGoalTitle(charityGoal.title || 'Giving Goal');
+                    setEditGoalTargetDate(charityGoal.targetDate || '2026-12-31');
+                    setShowEditGoalModal(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Adjust Target / Edit</span>
+                </button>
               </div>
             </div>
           </div>
+
+          {/* ALL STARTED CHARITY GOALS & CAMPAIGNS DIRECTORY */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-stone-200 pb-4">
+              <div>
+                <h4 className="text-lg sm:text-xl font-black text-[#16241A] tracking-tight">
+                  All Started Goals & Giving Campaigns
+                </h4>
+                <p className="text-xs sm:text-sm text-stone-500 font-medium">
+                  Switch between campaigns, track multiple initiatives, and fulfill your intentions.
+                </p>
+              </div>
+
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-stone-100 text-stone-700">
+                {charityGoals?.length || 1} Total Campaigns
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {charityGoals?.map((g) => {
+                const isSelected = (g.id || 'goal_default') === (charityGoal.id || 'goal_default');
+                const percent = Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100));
+
+                return (
+                  <div
+                    key={g.id || g.title}
+                    className={`rounded-2xl p-5 border transition-all flex flex-col justify-between space-y-4 ${
+                      isSelected
+                        ? 'bg-amber-50/40 border-[#C1541F] ring-2 ring-[#C1541F]/30 shadow-xs'
+                        : 'bg-stone-50/60 border-stone-200 hover:border-stone-300'
+                    }`}
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded-md bg-stone-200/80 text-stone-700 text-xxs font-extrabold uppercase">
+                              {g.category || 'Charity'}
+                            </span>
+                            {isSelected && (
+                              <span className="px-2 py-0.5 rounded-md bg-[#C1541F] text-white text-xxs font-black uppercase">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <h5 className="text-base font-black text-[#16241A]">{g.title}</h5>
+                        </div>
+
+                        {charityGoals.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => deleteCharityGoal(g.id || '')}
+                            className="text-stone-300 hover:text-red-500 p-1 transition-colors cursor-pointer"
+                            title="Delete goal"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Dates */}
+                      <div className="flex items-center gap-3 text-xs font-semibold text-stone-500">
+                        <span>Started: <strong className="text-stone-700">{g.startDate || 'Jan 1, 2026'}</strong></span>
+                        <span>·</span>
+                        <span>Deadline: <strong className="text-stone-700">{g.targetDate || 'Dec 31, 2026'}</strong></span>
+                      </div>
+
+                      {/* Mini Progress */}
+                      <div className="space-y-1 pt-1">
+                        <div className="flex justify-between text-xs font-black">
+                          <span className="text-stone-700">${g.currentAmount.toLocaleString()} / ${g.targetAmount.toLocaleString()} USD</span>
+                          <span className="text-[#C1541F]">{percent}%</span>
+                        </div>
+                        <div className="w-full bg-stone-200/70 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-[#C1541F] h-full rounded-full transition-all"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {g.notes && (
+                        <p className="text-xs text-stone-500 italic bg-white p-2 rounded-xl border border-stone-200/60">
+                          "{g.notes}"
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between">
+                      {isSelected ? (
+                        <span className="text-xs font-extrabold text-[#C1541F] flex items-center gap-1">
+                          <Check className="w-4 h-4" />
+                          <span>Currently Selected</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => updateCharityGoal(g)}
+                          className="px-3.5 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Select as Active Goal
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateCharityGoal(g);
+                          setShowContributeModal(true);
+                        }}
+                        className="px-3 py-1.5 rounded-xl text-stone-700 hover:text-emerald-700 hover:bg-emerald-50 text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Contribute</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* MODAL 1: START NEW CHARITY GOAL */}
+          {showStartGoalModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-stone-200 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#C1541F]">
+                      <Target className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-[#16241A]">Start New Charity Goal</h4>
+                      <p className="text-xs text-stone-500 font-semibold">Define your starting date, deadline & philanthropic target</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowStartGoalModal(false)}
+                    className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!newGoalTitle.trim() || newGoalTargetAmount <= 0) return;
+                    startCharityGoal({
+                      title: newGoalTitle.trim(),
+                      category: newGoalCategory,
+                      period: newGoalPeriod,
+                      startDate: newGoalStartDate,
+                      targetDate: newGoalTargetDate,
+                      currentAmount: Number(newGoalStartingAmount) || 0,
+                      targetAmount: Number(newGoalTargetAmount),
+                      currency: 'USD',
+                      notes: newGoalNotes.trim(),
+                      status: 'active',
+                    });
+                    setShowStartGoalModal(false);
+                  }}
+                  className="space-y-4"
+                >
+                  {/* Goal Title */}
+                  <div className="space-y-1">
+                    <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Goal / Campaign Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ramadan 2026 Water Well Project, Orphan Sponsorship"
+                      value={newGoalTitle}
+                      onChange={(e) => setNewGoalTitle(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                    />
+                  </div>
+
+                  {/* Category & Period */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Charity Category
+                      </label>
+                      <select
+                        value={newGoalCategory}
+                        onChange={(e) => setNewGoalCategory(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs cursor-pointer"
+                      >
+                        <option value="Sadaqah Jariyah">Sadaqah Jariyah (Ongoing)</option>
+                        <option value="Water & Sanitation">Clean Water Wells</option>
+                        <option value="Orphan Sponsorship">Orphan & Widow Care</option>
+                        <option value="Food & Emergency Aid">Food & Emergency Relief</option>
+                        <option value="Masjid & Education">Masjid & Islamic Schools</option>
+                        <option value="General Sadaqah">General Voluntary Charity</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Timeline Period
+                      </label>
+                      <select
+                        value={newGoalPeriod}
+                        onChange={(e) => setNewGoalPeriod(e.target.value as 'annual' | 'monthly' | 'campaign')}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs cursor-pointer"
+                      >
+                        <option value="campaign">Specific Campaign (Custom Dates)</option>
+                        <option value="annual">Annual Goal (Full Year)</option>
+                        <option value="monthly">Monthly Recurring Goal</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Start Date & Target Deadline */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Goal Starting Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={newGoalStartDate}
+                        onChange={(e) => setNewGoalStartDate(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Target Deadline
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={newGoalTargetDate}
+                        onChange={(e) => setNewGoalTargetDate(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Starting Amount & Target Amount */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Starting Seed Funds ($ USD)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newGoalStartingAmount}
+                        onChange={(e) => setNewGoalStartingAmount(Number(e.target.value))}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Target Goal Amount ($ USD)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={newGoalTargetAmount}
+                        onChange={(e) => setNewGoalTargetAmount(Number(e.target.value))}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes / Niyyah */}
+                  <div className="space-y-1">
+                    <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Niyyah (Intention) & Notes
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. In loving memory of parents; may Allah accept it as ongoing barakah"
+                      value={newGoalNotes}
+                      onChange={(e) => setNewGoalNotes(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="pt-3 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowStartGoalModal(false)}
+                      className="px-5 py-3 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-100 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 rounded-xl bg-[#C1541F] hover:bg-[#a94515] text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-xs cursor-pointer flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4 stroke-[3px]" />
+                      <span>Start Charity Goal</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 2: QUICK CONTRIBUTE TO ACTIVE GOAL */}
+          {showContributeModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-stone-200 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                      <Gift className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-[#16241A]">Log Contribution</h4>
+                      <p className="text-xs text-stone-500 font-semibold">Towards: {charityGoal.title}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowContributeModal(false)}
+                    className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (contributeAmount <= 0) return;
+                    addSadaqah({
+                      date: todayStr,
+                      amount: Number(contributeAmount),
+                      cause: charityGoal.title || 'Charity Campaign',
+                      recipient: contributeRecipient.trim() || 'Charity Organization',
+                      note: contributeNote.trim() || `Contributed towards ${charityGoal.title}`,
+                      currency: 'USD',
+                    });
+                    setShowContributeModal(false);
+                    setContributeNote('');
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Contribution Amount ($ USD)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={contributeAmount}
+                      onChange={(e) => setContributeAmount(Number(e.target.value))}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-lg font-black text-stone-900 outline-none focus:border-[#C1541F]"
+                    />
+                  </div>
+
+                  {/* Preset chips */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {[10, 25, 50, 100, 250].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setContributeAmount(amt)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                          contributeAmount === amt
+                            ? 'bg-[#C1541F] text-white'
+                            : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+                        }`}
+                      >
+                        +${amt}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Recipient / Organization
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Islamic Relief, Local Masjid"
+                      value={contributeRecipient}
+                      onChange={(e) => setContributeRecipient(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#C1541F]"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Note / Intention (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Monthly voluntary Sadaqah fulfillment"
+                      value={contributeNote}
+                      onChange={(e) => setContributeNote(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#C1541F]"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowContributeModal(false)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs uppercase"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#2E8B4F] hover:bg-[#257341] text-white font-extrabold text-xs uppercase tracking-wider shadow-xs cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Confirm Contribution</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 3: EDIT GOAL TARGET / DETAILS */}
+          {showEditGoalModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-stone-200 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-700">
+                      <Edit3 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-[#16241A]">Edit Goal Target</h4>
+                      <p className="text-xs text-stone-500 font-semibold">Adjust target amounts and deadlines</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditGoalModal(false)}
+                    className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    updateCharityGoal({
+                      title: editGoalTitle.trim(),
+                      targetAmount: Number(editTargetAmount),
+                      targetDate: editGoalTargetDate,
+                    });
+                    setShowEditGoalModal(false);
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Goal Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editGoalTitle}
+                      onChange={(e) => setEditGoalTitle(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#C1541F]"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Target Goal Amount ($ USD)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={editTargetAmount}
+                      onChange={(e) => setEditTargetAmount(Number(e.target.value))}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#C1541F]"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Target Deadline Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={editGoalTargetDate}
+                      onChange={(e) => setEditGoalTargetDate(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#C1541F] cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowEditGoalModal(false)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs uppercase"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#C1541F] hover:bg-[#a94515] text-white font-extrabold text-xs uppercase tracking-wider shadow-xs cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
