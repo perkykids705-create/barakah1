@@ -132,30 +132,43 @@ export const ZakatModule: React.FC = () => {
 
       {/* 2. TAB 1: ZAKAT CALCULATOR */}
       {activeTab === 'calculator' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Inputs Form */}
           <div className="lg:col-span-2 bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200/80">
+            
+            {/* Header with Title and Nisab Selector */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-stone-200">
               <div>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('calculateZakat')}</h3>
-                <p className="text-sm sm:text-base text-stone-600 font-medium mt-0.5">{t('nisabExplanation')}</p>
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-[#C1541F] uppercase tracking-wider mb-1">
+                  <Coins className="w-4 h-4" />
+                  <span>Annual Fardh Obligation</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-[#16241A] tracking-tight">
+                  {t('calculateZakat')}
+                </h3>
               </div>
 
-              {/* Nisab choice */}
-              <div className="flex items-center gap-2 bg-stone-50 p-2 rounded-2xl border border-stone-200 text-sm font-semibold shrink-0">
-                <span className="text-stone-600">{t('nisabStandardLabel')}:</span>
+              {/* Nisab choice button group */}
+              <div className="flex items-center gap-2 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-sm font-bold shrink-0 self-start md:self-center">
+                <span className="text-stone-600 pl-2 text-xs uppercase tracking-wider">{t('nisabStandardLabel')}:</span>
                 <button
+                  type="button"
                   onClick={() => setNisabStandard('gold')}
-                  className={`px-3 py-1.5 rounded-xl cursor-pointer ${
-                    nisabStandard === 'gold' ? 'bg-[#C1541F] text-white font-bold shadow-xs' : 'text-stone-700'
+                  className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                    nisabStandard === 'gold'
+                      ? 'bg-[#C1541F] text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200'
                   }`}
                 >
                   {t('nisabGoldLabel')}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setNisabStandard('silver')}
-                  className={`px-3 py-1.5 rounded-xl cursor-pointer ${
-                    nisabStandard === 'silver' ? 'bg-[#C1541F] text-white font-bold shadow-xs' : 'text-stone-700'
+                  className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                    nisabStandard === 'silver'
+                      ? 'bg-[#C1541F] text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200'
                   }`}
                 >
                   {t('nisabSilverLabel')}
@@ -163,94 +176,119 @@ export const ZakatModule: React.FC = () => {
               </div>
             </div>
 
-            {/* Inline Nisab explanation */}
-            <div className="p-4 rounded-2xl bg-[#FAE5D8]/50 border border-[#C1541F]/30 text-sm text-[#C1541F] flex items-start gap-3">
-              <Info className="w-5 h-5 shrink-0 mt-0.5" />
-              <p className="leading-relaxed font-medium">
-                <strong>{t('nisabStandardLabel')}:</strong> {t('nisabExplanation')} Current threshold for {nisabStandard} is{' '}
-                <strong className="font-extrabold">${nisabThreshold.toFixed(2)} USD</strong>.
-              </p>
+            {/* Nisab explanation banner with full width */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FAE5D8]/50 border border-[#C1541F]/30 text-sm text-[#C1541F] flex items-start gap-3.5">
+              <Info className="w-5 h-5 shrink-0 mt-0.5 text-[#C1541F]" />
+              <div className="space-y-1">
+                <p className="leading-relaxed font-semibold text-stone-800">
+                  {t('nisabExplanation')}
+                </p>
+                <p className="text-xs sm:text-sm font-medium text-stone-700">
+                  Current active threshold ({nisabStandard === 'gold' ? '87.48g Gold' : '612.36g Silver'}):{' '}
+                  <span className="font-black text-[#C1541F] text-base">${nisabThreshold.toFixed(2)} USD</span>
+                </p>
+              </div>
             </div>
 
             {/* Form grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('cashSavingsLabel')} ($)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
+                  {t('cashSavingsLabel')} ($ USD)
+                </label>
                 <input
                   type="number"
                   value={cash}
                   onChange={(e) => setCash(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('investmentsLabel')} ($)</label>
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
+                  {t('investmentsLabel')} ($ USD)
+                </label>
                 <input
                   type="number"
                   value={investments}
                   onChange={(e) => setInvestments(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1.5">Gold Owned (grams)</label>
-                <div className="flex gap-2.5">
-                  <input
-                    type="number"
-                    value={goldGrams}
-                    onChange={(e) => setGoldGrams(Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
-                  />
-                  <input
-                    type="number"
-                    value={goldPrice}
-                    onChange={(e) => setGoldPrice(Number(e.target.value))}
-                    title="Price/gram"
-                    placeholder="$/g"
-                    className="w-28 px-3 py-3 rounded-2xl border border-stone-200 outline-none text-center text-base font-semibold"
-                  />
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
+                  Gold Owned
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="block text-xxs font-bold text-stone-500 uppercase mb-1">Grams</span>
+                    <input
+                      type="number"
+                      value={goldGrams}
+                      onChange={(e) => setGoldGrams(Number(e.target.value))}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-xxs font-bold text-stone-500 uppercase mb-1">Price ($/g)</span>
+                    <input
+                      type="number"
+                      value={goldPrice}
+                      onChange={(e) => setGoldPrice(Number(e.target.value))}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs text-center"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1.5">Silver Owned (grams)</label>
-                <div className="flex gap-2.5">
-                  <input
-                    type="number"
-                    value={silverGrams}
-                    onChange={(e) => setSilverGrams(Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
-                  />
-                  <input
-                    type="number"
-                    value={silverPrice}
-                    onChange={(e) => setSilverPrice(Number(e.target.value))}
-                    title="Price/gram"
-                    placeholder="$/g"
-                    className="w-28 px-3 py-3 rounded-2xl border border-stone-200 outline-none text-center text-base font-semibold"
-                  />
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
+                  Silver Owned
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="block text-xxs font-bold text-stone-500 uppercase mb-1">Grams</span>
+                    <input
+                      type="number"
+                      value={silverGrams}
+                      onChange={(e) => setSilverGrams(Number(e.target.value))}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-xxs font-bold text-stone-500 uppercase mb-1">Price ($/g)</span>
+                    <input
+                      type="number"
+                      value={silverPrice}
+                      onChange={(e) => setSilverPrice(Number(e.target.value))}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs text-center"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1.5">{t('businessAssets')} ($)</label>
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
+                  {t('businessAssets')} ($ USD)
+                </label>
                 <input
                   type="number"
                   value={businessInventory}
                   onChange={(e) => setBusinessInventory(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-base font-semibold outline-none"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-red-700 mb-1.5">Less: Immediate Liabilities / Debts ($)</label>
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-rose-800 uppercase tracking-wider mb-1.5">
+                  Less: Immediate Liabilities / Debts ($)
+                </label>
                 <input
                   type="number"
                   value={debts}
                   onChange={(e) => setDebts(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-2xl border border-red-200 bg-red-50/40 outline-none text-red-900 text-base font-semibold"
+                  className="w-full bg-rose-50/50 border border-rose-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-rose-950 outline-none focus:border-rose-500 transition-all shadow-xxs"
                 />
               </div>
             </div>
