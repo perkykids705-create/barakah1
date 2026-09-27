@@ -78,19 +78,34 @@ export const PrayerModule: React.FC = () => {
   const handleCountryChange = (countryName: string) => {
     const cities = getCitiesForCountry(countryName);
     if (cities.length > 0 && currentUser) {
-      updateProfile({ location: cities[0] });
+      const updates: Partial<typeof currentUser> = { location: cities[0] };
+      if (countryName === 'Pakistan') {
+        updates.calculationMethod = 1; // Karachi method
+        updates.madhab = 'hanafi';
+      }
+      updateProfile(updates);
     }
   };
 
   const handleCityChange = (cityName: string) => {
     const matched = citiesInCurrentCountry.find((c) => c.city === cityName);
     if (matched && currentUser) {
-      updateProfile({ location: matched });
+      const updates: Partial<typeof currentUser> = { location: matched };
+      if (currentCountry === 'Pakistan') {
+        updates.calculationMethod = 1; // Karachi method
+        updates.madhab = 'hanafi';
+      }
+      updateProfile(updates);
       return;
     }
     const loc = findLocationByCountryAndCity(currentCountry, cityName);
     if (loc && currentUser) {
-      updateProfile({ location: loc });
+      const updates: Partial<typeof currentUser> = { location: loc };
+      if (currentCountry === 'Pakistan') {
+        updates.calculationMethod = 1;
+        updates.madhab = 'hanafi';
+      }
+      updateProfile(updates);
     }
   };
 
@@ -178,7 +193,8 @@ export const PrayerModule: React.FC = () => {
       {/* 2. TODAY'S PRAYER TIMES TABLE */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {prayersList.map((prayer) => {
-          const isNext = nextPrayerInfo?.nextPrayer === prayer;
+          const isCurrent = nextPrayerInfo?.currentPrayer === prayer;
+          const isNext = nextPrayerInfo?.nextPrayer === prayer && !isCurrent;
           const time = prayerTimes ? prayerTimes[prayer] : '--:--';
           const status = getStatus(prayer);
           const isFardh = prayer !== 'Sunrise';
@@ -187,28 +203,41 @@ export const PrayerModule: React.FC = () => {
             <div
               key={prayer}
               className={`rounded-3xl p-5 sm:p-6 border transition-all flex flex-col justify-between ${
-                isNext
+                isCurrent
+                  ? 'bg-gradient-to-b from-[#2E8B4F] to-[#123D28] text-white border-[#4ADE80] shadow-lg ring-2 ring-[#4ADE80]/40'
+                  : isNext
                   ? 'bg-gradient-to-b from-[#123D28] to-[#0B2E1C] text-white border-[#C89B2E] shadow-md ring-2 ring-[#C89B2E]/40'
                   : 'bg-white text-[#16241A] border-stone-200 shadow-xs'
               }`}
             >
               <div>
+                {isCurrent && (
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-[#4ADE80] text-black px-2 py-0.5 rounded-full inline-block mb-2 shadow-2xs">
+                    Active Window
+                  </span>
+                )}
+                {isNext && (
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-[#FBBF24] text-black px-2 py-0.5 rounded-full inline-block mb-2 shadow-2xs">
+                    Next Upcoming
+                  </span>
+                )}
+
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-sm sm:text-base font-extrabold uppercase tracking-wider ${
-                      isNext ? 'text-[#FBBF24]' : 'text-stone-600'
+                      isCurrent || isNext ? 'text-[#FBBF24]' : 'text-stone-600'
                     }`}
                   >
                     {t(prayer)}
                   </span>
-                  {isNext && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] animate-ping" />
+                  {(isCurrent || isNext) && (
+                    <span className={`w-2.5 h-2.5 rounded-full animate-ping ${isCurrent ? 'bg-[#4ADE80]' : 'bg-[#FBBF24]'}`} />
                   )}
                 </div>
 
                 <p
                   className={`text-2xl sm:text-3xl font-black mt-2.5 tabular-nums tracking-tight ${
-                    isNext ? 'text-white' : 'text-[#16241A]'
+                    isCurrent || isNext ? 'text-white' : 'text-[#16241A]'
                   }`}
                 >
                   {time}
@@ -223,7 +252,7 @@ export const PrayerModule: React.FC = () => {
                       className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer ${
                         status === 'on-time'
                           ? 'bg-[#2E8B4F] text-white shadow-xs'
-                          : isNext
+                          : isCurrent || isNext
                           ? 'bg-white/20 text-white hover:bg-white/30'
                           : 'bg-stone-100 text-[#16241A] hover:bg-stone-200'
                       }`}
@@ -238,7 +267,7 @@ export const PrayerModule: React.FC = () => {
                           ? 'bg-amber-500 text-white'
                           : status === 'qada'
                           ? 'bg-red-500 text-white'
-                          : isNext
+                          : isCurrent || isNext
                           ? 'bg-white/20 text-stone-200 hover:bg-white/30'
                           : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                       }`}

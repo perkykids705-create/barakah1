@@ -512,7 +512,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         currentUser.madhab
       );
       setPrayerTimes(times);
-      setNextPrayerInfo(getNextPrayerInfo(times));
+      setNextPrayerInfo(getNextPrayerInfo(times, currentUser.location.timezone));
     } catch (e) {
       console.error('Failed to load prayer times:', e);
     }
@@ -522,7 +522,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshPrayerTimes();
     const interval = setInterval(() => {
       if (prayerTimes) {
-        setNextPrayerInfo(getNextPrayerInfo(prayerTimes));
+        setNextPrayerInfo(getNextPrayerInfo(prayerTimes, currentUser?.location?.timezone));
       }
     }, 10000);
     return () => clearInterval(interval);

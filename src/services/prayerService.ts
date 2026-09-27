@@ -197,70 +197,211 @@ export const fetchPrayerTimes = async (
 };
 
 export interface NextPrayerInfo {
+  currentPrayer: PrayerName | 'Sunrise' | null;
+  currentPrayerTime: string;
   nextPrayer: PrayerName;
   nextTime: string;
-  previousPrayer: PrayerName;
+  previousPrayer: PrayerName | 'Sunrise';
   minutesRemaining: number;
   formattedCountdown: string;
   percentElapsed: number;
 }
 
-export const getNextPrayerInfo = (timings: PrayerTimesData): NextPrayerInfo => {
+export const getNextPrayerInfo = (timings: PrayerTimesData, timezone?: string): NextPrayerInfo => {
   const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Calculate current minutes in target timezone
+  let currentMinutes = now.getHours() * 60 + now.getMinutes();
+  if (timezone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      }).formatToParts(now);
+      let h = 0;
+      let m = 0;
+      for (const p of parts) {
+        if (p.type === 'hour') h = parseInt(p.value, 10) % 24;
+        if (p.type === 'minute') m = parseInt(p.value, 10);
+      }
+      currentMinutes = h * 60 + m;
+    } catch (e) {
+      console.warn('Failed to parse timezone in getNextPrayerInfo:', e);
+    }
+  }
 
   const parseToMinutes = (timeStr: string): number => {
+    if (!timeStr) return 0;
     const [h, m] = timeStr.split(':').map(Number);
     return (h || 0) * 60 + (m || 0);
   };
 
-  const prayers: { name: PrayerName; minutes: number; time: string }[] = [
-    { name: 'Fajr', minutes: parseToMinutes(timings.Fajr), time: timings.Fajr },
-    { name: 'Sunrise', minutes: parseToMinutes(timings.Sunrise), time: timings.Sunrise },
-    { name: 'Dhuhr', minutes: parseToMinutes(timings.Dhuhr), time: timings.Dhuhr },
-    { name: 'Asr', minutes: parseToMinutes(timings.Asr), time: timings.Asr },
-    { name: 'Maghrib', minutes: parseToMinutes(timings.Maghrib), time: timings.Maghrib },
-    { name: 'Isha', minutes: parseToMinutes(timings.Isha), time: timings.Isha },
-  ];
+  const fajr = parseToMinutes(timings.Fajr);
+  const sunrise = parseToMinutes(timings.Sunrise);
+  const sunriseEnd = sunrise + 30; // Sunrise window open for exactly 30 minutes
+  const dhuhr = parseToMinutes(timings.Dhuhr);
+  const asr = parseToMinutes(timings.Asr);
+  const maghrib = parseToMinutes(timings.Maghrib);
+  const isha = parseToMinutes(timings.Isha);
 
-  // Find next
-  for (let i = 0; i < prayers.length; i++) {
-    if (currentMinutes < prayers[i].minutes) {
-      const prev = i === 0 ? prayers[prayers.length - 1] : prayers[i - 1];
-      const remaining = prayers[i].minutes - currentMinutes;
-      const hours = Math.floor(remaining / 60);
-      const mins = remaining % 60;
-      
-      const totalSpan = prayers[i].minutes - prev.minutes;
-      const elapsed = currentMinutes - prev.minutes;
-      const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+  // Helper for formatted countdown string
+  const formatCountdown = (rem: number) => {
+    const hours = Math.floor(rem / 60);
+    const mins = rem % 60;
+    return `${hours}h ${mins}m`;
+  };
 
-      return {
-        nextPrayer: prayers[i].name,
-        nextTime: prayers[i].time,
-        previousPrayer: prev.name,
-        minutesRemaining: remaining,
-        formattedCountdown: `${hours}h ${mins}m`,
-        percentElapsed: percent,
-      };
-    }
+  // 1. Late night before Fajr
+  if (currentMinutes < fajr) {
+    const ishaPrevMinutes = isha - 24 * 60;
+    const remaining = fajr - currentMinutes;
+    const totalSpan = fajr - ishaPrevMinutes;
+    const elapsed = currentMinutes - ishaPrevMinutes;
+    const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+
+    return {
+      currentPrayer: 'Isha',
+      currentPrayerTime: timings.Isha,
+      nextPrayer: 'Fajr',
+      nextTime: timings.Fajr,
+      previousPrayer: 'Isha',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
   }
 
-  // After Isha, next is Fajr tomorrow
-  const fajrTomorrow = prayers[0].minutes + 24 * 60;
+  // 2. Fajr time (Fajr -> Sunrise)
+  if (currentMinutes >= fajr && currentMinutes < sunrise) {
+    const remaining = dhuhr - currentMinutes;
+    const totalSpan = dhuhr - fajr;
+    const elapsed = currentMinutes - fajr;
+    const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+
+    return {
+      currentPrayer: 'Fajr',
+      currentPrayerTime: timings.Fajr,
+      nextPrayer: 'Dhuhr',
+      nextTime: timings.Dhuhr,
+      previousPrayer: 'Fajr',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
+  }
+
+  // 3. Sunrise Window (Sunrise -> Sunrise + 30 mins)
+  if (currentMinutes >= sunrise && currentMinutes < sunriseEnd) {
+    const remaining = dhuhr - currentMinutes;
+    const totalSpan = 30;
+    const elapsed = currentMinutes - sunrise;
+    const percent = Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100)));
+
+    return {
+      currentPrayer: 'Sunrise',
+      currentPrayerTime: timings.Sunrise,
+      nextPrayer: 'Dhuhr',
+      nextTime: timings.Dhuhr,
+      previousPrayer: 'Fajr',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
+  }
+
+  // 4. Post-Sunrise / Duha period (Sunrise + 30 mins -> Dhuhr)
+  if (currentMinutes >= sunriseEnd && currentMinutes < dhuhr) {
+    const remaining = dhuhr - currentMinutes;
+    const totalSpan = dhuhr - sunriseEnd;
+    const elapsed = currentMinutes - sunriseEnd;
+    const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+
+    return {
+      currentPrayer: null,
+      currentPrayerTime: '',
+      nextPrayer: 'Dhuhr',
+      nextTime: timings.Dhuhr,
+      previousPrayer: 'Fajr',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
+  }
+
+  // 5. Dhuhr Window (Dhuhr -> Asr)
+  if (currentMinutes >= dhuhr && currentMinutes < asr) {
+    const remaining = asr - currentMinutes;
+    const totalSpan = asr - dhuhr;
+    const elapsed = currentMinutes - dhuhr;
+    const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+
+    return {
+      currentPrayer: 'Dhuhr',
+      currentPrayerTime: timings.Dhuhr,
+      nextPrayer: 'Asr',
+      nextTime: timings.Asr,
+      previousPrayer: 'Dhuhr',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
+  }
+
+  // 6. Asr Window (Asr -> Maghrib)
+  if (currentMinutes >= asr && currentMinutes < maghrib) {
+    const remaining = maghrib - currentMinutes;
+    const totalSpan = maghrib - asr;
+    const elapsed = currentMinutes - asr;
+    const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+
+    return {
+      currentPrayer: 'Asr',
+      currentPrayerTime: timings.Asr,
+      nextPrayer: 'Maghrib',
+      nextTime: timings.Maghrib,
+      previousPrayer: 'Asr',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
+  }
+
+  // 7. Maghrib Window (Maghrib -> Isha)
+  if (currentMinutes >= maghrib && currentMinutes < isha) {
+    const remaining = isha - currentMinutes;
+    const totalSpan = isha - maghrib;
+    const elapsed = currentMinutes - maghrib;
+    const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
+
+    return {
+      currentPrayer: 'Maghrib',
+      currentPrayerTime: timings.Maghrib,
+      nextPrayer: 'Isha',
+      nextTime: timings.Isha,
+      previousPrayer: 'Maghrib',
+      minutesRemaining: remaining,
+      formattedCountdown: formatCountdown(remaining),
+      percentElapsed: percent,
+    };
+  }
+
+  // 8. Isha Window (Isha -> Midnight / Fajr tomorrow)
+  const fajrTomorrow = fajr + 24 * 60;
   const remaining = fajrTomorrow - currentMinutes;
-  const hours = Math.floor(remaining / 60);
-  const mins = remaining % 60;
-  const totalSpan = fajrTomorrow - prayers[prayers.length - 1].minutes;
-  const elapsed = currentMinutes - prayers[prayers.length - 1].minutes;
+  const totalSpan = fajrTomorrow - isha;
+  const elapsed = currentMinutes - isha;
   const percent = totalSpan > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100))) : 50;
 
   return {
+    currentPrayer: 'Isha',
+    currentPrayerTime: timings.Isha,
     nextPrayer: 'Fajr',
-    nextTime: prayers[0].time,
+    nextTime: timings.Fajr,
     previousPrayer: 'Isha',
     minutesRemaining: remaining,
-    formattedCountdown: `${hours}h ${mins}m`,
+    formattedCountdown: formatCountdown(remaining),
     percentElapsed: percent,
   };
 };

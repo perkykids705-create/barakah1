@@ -36,6 +36,12 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Search,
+  TrendingUp,
+  Award,
+  PieChart,
+  Activity,
+  Layers,
 } from 'lucide-react';
 
 export const ProductivityModule: React.FC = () => {
@@ -67,7 +73,7 @@ export const ProductivityModule: React.FC = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const [activeTab, setActiveTab] = useState<'planner' | 'habits' | 'todos' | 'review'>('planner');
+  const [activeTab, setActiveTab] = useState<'planner' | 'habits' | 'review'>('planner');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [selectedPlannerDate, setSelectedPlannerDate] = useState<string>(todayStr);
   const [showAllDates, setShowAllDates] = useState<boolean>(false);
@@ -115,10 +121,12 @@ export const ProductivityModule: React.FC = () => {
     dateStr: string;
   } | null>(null);
 
-  // Todo form
-  const [newTodoTitle, setNewTodoTitle] = useState('');
-  const [newTodoPriority, setNewTodoPriority] = useState<IslamicPriority>('fardh');
-  const [newTodoCategory, setNewTodoCategory] = useState<LifeTaskCategory>('worship');
+  // Review Filter States
+  const [reviewPeriod, setReviewPeriod] = useState<'7days' | '30days' | 'all'>('7days');
+  const [reviewCategory, setReviewCategory] = useState<string>('all');
+  const [reviewPriority, setReviewPriority] = useState<string>('all');
+  const [reviewStatus, setReviewStatus] = useState<'all' | 'completed' | 'pending'>('all');
+  const [reviewSearch, setReviewSearch] = useState('');
 
   // Modal states for Task Confirmation & Consent / Editing
   const [consentModalItem, setConsentModalItem] = useState<{
@@ -455,19 +463,6 @@ export const ProductivityModule: React.FC = () => {
     setHabitConsentModal(null);
   };
 
-  const handleAddTodo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTodoTitle.trim()) return;
-    addTodo({
-      title: newTodoTitle.trim(),
-      priorityTag: newTodoPriority,
-      dueDate: todayStr,
-      completed: false,
-      category: newTodoCategory,
-    });
-    setNewTodoTitle('');
-  };
-
   // Safe Toggle with Consent Protocol
   const handleTaskCheckClick = (type: 'block' | 'todo', item: PlannedBlock | TodoItem) => {
     if (!item.completed) {
@@ -592,17 +587,117 @@ export const ProductivityModule: React.FC = () => {
     return matchesCategory && matchesDate;
   });
 
-  const filteredTodos = selectedCategoryFilter === 'all'
-    ? todos
-    : todos.filter((tItem) => tItem.category === selectedCategoryFilter);
-
-  // Review calculations
+  // Comprehensive Review Calculations
   const totalPrayerLogs = prayerLogs.length;
   const onTimePrayers = prayerLogs.filter((p) => p.status === 'on-time').length;
   const prayerConsistency = totalPrayerLogs > 0 ? Math.round((onTimePrayers / totalPrayerLogs) * 100) : 85;
 
   const totalPagesRead = readingLogs.reduce((sum, r) => sum + r.pagesRead, 0);
   const totalCharityGiven = sadaqahLogs.reduce((sum, s) => sum + s.amount, 0);
+
+  // Dynamic Cutoff Date string for review period
+  const getCutoffDateStr = (period: '7days' | '30days' | 'all') => {
+    if (period === 'all') return '1970-01-01';
+    const days = period === '7days' ? 7 : 30;
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
+  };
+
+  const cutoffDateStr = getCutoffDateStr(reviewPeriod);
+
+  // Filtered blocks for review window
+  const periodBlocks = plannedBlocks.filter((b) => {
+    const taskDate = b.date || todayStr;
+    const matchesPeriod = taskDate >= cutoffDateStr;
+    const matchesCategory = reviewCategory === 'all' || b.category === reviewCategory;
+    const matchesPriority = reviewPriority === 'all' || b.priorityTag === reviewPriority;
+    return matchesPeriod && matchesCategory && matchesPriority;
+  });
+
+  // Filtered ledger entries with search and status filter
+  const ledgerBlocks = periodBlocks.filter((b) => {
+    const matchesStatus =
+      reviewStatus === 'all' ||
+      (reviewStatus === 'completed' && b.completed) ||
+      (reviewStatus === 'pending' && !b.completed);
+    const matchesSearch =
+      !reviewSearch.trim() ||
+      b.title.toLowerCase().includes(reviewSearch.toLowerCase().trim());
+    return matchesStatus && matchesSearch;
+  });
+
+  // Summary Metrics
+  const totalPeriodPlanned = periodBlocks.length;
+  const completedPeriodPlanned = periodBlocks.filter((b) => b.completed).length;
+  const taskCompletionRate =
+    totalPeriodPlanned > 0
+      ? Math.round((completedPeriodPlanned / totalPeriodPlanned) * 100)
+      : 0;
+
+  // Prayer Anchor Stats
+  const prayerAnchorStats = (['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as PrayerName[]).map(
+    (prayer) => {
+      const total = periodBlocks.filter((b) => b.prayerAnchor === prayer).length;
+      const completed = periodBlocks.filter(
+        (b) => b.prayerAnchor === prayer && b.completed
+      ).length;
+      const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+      return { prayer, total, completed, pct };
+    }
+  );
+
+  // Life Category Breakdown
+  const categoryStats = LIFE_CATEGORIES.map((cat) => {
+    const total = periodBlocks.filter((b) => b.category === cat.id).length;
+    const completed = periodBlocks.filter(
+      (b) => b.category === cat.id && b.completed
+    ).length;
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { cat, total, completed, pct };
+  });
+
+  // Daily Chart Data for period
+  const getChartDays = () => {
+    const numDays = reviewPeriod === '7days' ? 7 : reviewPeriod === '30days' ? 14 : 7;
+    const result: { dateStr: string; label: string; completed: number; total: number }[] = [];
+    const now = new Date();
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      const dayTasks = periodBlocks.filter((b) => (b.date || todayStr) === dateStr);
+      const completed = dayTasks.filter((b) => b.completed).length;
+      result.push({
+        dateStr,
+        label,
+        completed,
+        total: dayTasks.length,
+      });
+    }
+    return result;
+  };
+  const chartDaysData = getChartDays();
+  const maxChartVal = Math.max(...chartDaysData.map((d) => Math.max(d.completed, d.total)), 1);
+
+  // Habits statistics
+  const activeHabitsCount = habits.length;
+  const totalHabitCompletions = habits.reduce((acc, h) => {
+    const logsInPeriod = Object.keys(h.logs).filter((dStr) => dStr >= cutoffDateStr && h.logs[dStr]);
+    return acc + logsInPeriod.length;
+  }, 0);
+  const bestHabitStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.streak)) : 0;
+
+  // Holistic Score
+  const holisticScore = Math.min(
+    100,
+    Math.round(
+      (taskCompletionRate * 0.4) +
+      (prayerConsistency * 0.35) +
+      (activeHabitsCount > 0 ? Math.min(100, (totalHabitCompletions / (activeHabitsCount * 7)) * 100) * 0.25 : 20)
+    )
+  );
 
   return (
     <div className="space-y-6">
@@ -630,16 +725,6 @@ export const ProductivityModule: React.FC = () => {
             {t('habitsTitle')}
           </button>
           <button
-            onClick={() => setActiveTab('todos')}
-            className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
-              activeTab === 'todos'
-                ? 'bg-[#1D7A9C] text-white shadow-xs'
-                : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            {t('islamicPriorities')}
-          </button>
-          <button
             onClick={() => setActiveTab('review')}
             className={`px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
               activeTab === 'review'
@@ -658,8 +743,8 @@ export const ProductivityModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Filter Pills (When on planner or todos tab) */}
-      {(activeTab === 'planner' || activeTab === 'todos') && (
+      {/* Category Filter Pills (When on planner tab) */}
+      {activeTab === 'planner' && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-1 scrollbar-thin">
           <span className="text-xs font-bold text-stone-500 flex items-center gap-1 shrink-0">
             <Filter className="w-3.5 h-3.5" />
@@ -1160,12 +1245,12 @@ export const ProductivityModule: React.FC = () => {
                     </div>
 
                     {/* Interactive 7-Day Consistency Matrix */}
-                    <div className="bg-stone-50/90 rounded-2xl p-3.5 sm:p-4 border border-stone-200">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-xs font-black text-stone-700 uppercase tracking-wider">7-Day Consistency Tracker</span>
-                        <span className="text-xs font-bold text-[#0E8C74]">Tap day to toggle log</span>
+                    <div className="bg-stone-50/90 rounded-2xl p-2.5 sm:p-4 border border-stone-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] sm:text-xs font-black text-stone-700 uppercase tracking-wider">7-Day Consistency</span>
+                        <span className="text-[10px] sm:text-xs font-bold text-[#0E8C74]">Tap day to toggle</span>
                       </div>
-                      <div className="grid grid-cols-7 gap-2">
+                      <div className="grid grid-cols-7 gap-1 sm:gap-2">
                         {weekDaysList.map((day) => {
                           const isDoneOnDay = !!habit.logs[day.dateStr];
                           const isTargetDay = activeDays.includes(day.dayLabel);
@@ -1175,7 +1260,7 @@ export const ProductivityModule: React.FC = () => {
                               key={day.dateStr}
                               disabled={!isTargetDay}
                               onClick={() => handleHabitDayClick(habit, day.dateStr, isTargetDay)}
-                              className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl text-center transition-all border ${
+                              className={`flex flex-col items-center justify-center py-2 px-1 sm:p-3 rounded-xl sm:rounded-2xl text-center transition-all border ${
                                 !isTargetDay
                                   ? 'bg-stone-100/60 border-stone-200/80 text-stone-400 cursor-not-allowed opacity-50'
                                   : isDoneOnDay
@@ -1190,15 +1275,15 @@ export const ProductivityModule: React.FC = () => {
                                   : `${day.dateStr} (${day.dayLabel}) - Click to toggle completion`
                               }
                             >
-                              <span className="text-[11px] uppercase font-black tracking-tight">{day.dayLabel}</span>
-                              <span className="text-xs sm:text-sm font-black mt-0.5">{day.dayNum}</span>
-                              <div className="mt-1">
+                              <span className="text-[9px] sm:text-[11px] uppercase font-black tracking-tight leading-none">{day.dayLabel}</span>
+                              <span className="text-xs sm:text-sm font-black mt-1 leading-none">{day.dayNum}</span>
+                              <div className="mt-1.5 flex items-center justify-center min-h-[16px]">
                                 {isDoneOnDay ? (
-                                  <Check className="w-4 h-4 stroke-[3]" />
+                                  <Check className="w-3 h-3 sm:w-4 sm:h-4 stroke-[3]" />
                                 ) : !isTargetDay ? (
-                                  <span className="text-[10px] font-bold text-stone-400 leading-none">Off</span>
+                                  <span className="text-[8px] sm:text-[10px] font-bold text-stone-400 leading-none">Off</span>
                                 ) : (
-                                  <span className="w-2 h-2 rounded-full bg-stone-300 inline-block" />
+                                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-stone-300 inline-block" />
                                 )}
                               </div>
                             </button>
@@ -1214,189 +1299,358 @@ export const ProductivityModule: React.FC = () => {
         </div>
       )}
 
-      {/* 4. TAB 3: TODOS WITH EXPANDED ISLAMIC PRIORITY & LIFE TAGS */}
-      {activeTab === 'todos' && (
+      {/* 4. TAB 3: WEEKLY & MONTHLY REVIEW SUMMARY & CHART ANALYTICS */}
+      {activeTab === 'review' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-5 sm:p-7 border border-stone-200 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-              <div>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('islamicPriorities')} & Daily Tasks</h3>
-                <p className="text-xs sm:text-sm text-stone-600 font-medium">Prioritize worldly and spiritual duties across Fardh, Wajib, Sunnah, Nafl, and Mubah</p>
+          {/* Review Filter Bar */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-[#1D7A9C]" />
+                <h3 className="text-xl sm:text-2xl font-extrabold text-[#16241A] tracking-tight">{t('weeklyReview')}</h3>
               </div>
-
-              {/* Add Todo */}
-              <form onSubmit={handleAddTodo} className="flex flex-wrap items-center gap-2.5">
-                <input
-                  type="text"
-                  placeholder="Task title..."
-                  value={newTodoTitle}
-                  onChange={(e) => setNewTodoTitle(e.target.value)}
-                  className="px-4 py-2.5 rounded-2xl border border-stone-200 text-sm font-semibold outline-none min-w-[200px]"
-                  required
-                />
-                <select
-                  value={newTodoCategory}
-                  onChange={(e) => setNewTodoCategory(e.target.value as LifeTaskCategory)}
-                  className="px-3 py-2.5 rounded-2xl border border-stone-200 text-xs sm:text-sm font-semibold outline-none bg-white"
-                >
-                  {LIFE_CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {t(cat.key)}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newTodoPriority}
-                  onChange={(e) => setNewTodoPriority(e.target.value as IslamicPriority)}
-                  className="px-3 py-2.5 rounded-2xl border border-stone-200 text-xs sm:text-sm font-semibold outline-none bg-white"
-                >
-                  {PRIORITY_TAGS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {t(p.key)}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-2xl bg-[#1D7A9C] text-white text-xs sm:text-sm font-bold hover:bg-[#15607a] cursor-pointer shadow-xs"
-                >
-                  + Add
-                </button>
-              </form>
+              <p className="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">
+                Comprehensive audit of your prayer-anchored tasks, habits, spiritual consistency, and life domains
+              </p>
             </div>
 
-            <div className="space-y-3">
-              {filteredTodos.length === 0 ? (
-                <div className="text-center py-10 px-4 border border-dashed border-stone-300 rounded-3xl bg-stone-50/80 space-y-4">
-                  <div className="w-12 h-12 rounded-2xl bg-stone-200/70 text-stone-600 flex items-center justify-center mx-auto">
-                    <Filter className="w-6 h-6" />
+            {/* Time Period Selector */}
+            <div className="flex items-center gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 shrink-0">
+              <button
+                onClick={() => setReviewPeriod('7days')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  reviewPeriod === '7days'
+                    ? 'bg-[#1D7A9C] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => setReviewPeriod('30days')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  reviewPeriod === '30days'
+                    ? 'bg-[#1D7A9C] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => setReviewPeriod('all')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  reviewPeriod === 'all'
+                    ? 'bg-[#1D7A9C] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                All Time
+              </button>
+            </div>
+          </div>
+
+          {/* Metric Overview Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#E1F2E7]/80 to-[#E1F2E7]/30 border border-[#2E8B4F]/30 shadow-2xs relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black text-[#2E8B4F] uppercase tracking-wider">Holistic Consistency</span>
+                <Award className="w-5 h-5 text-[#2E8B4F]" />
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-3xl sm:text-4xl font-black text-[#16241A] tabular-nums">{holisticScore}</p>
+                <span className="text-xs font-extrabold text-[#2E8B4F] bg-[#2E8B4F]/10 px-2 py-0.5 rounded-md">/ 100 Score</span>
+              </div>
+              <p className="text-xs text-stone-600 font-medium mt-2">Combined tasks, prayers & habits</p>
+            </div>
+
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#DCF0F6]/80 to-[#DCF0F6]/30 border border-[#1D7A9C]/30 shadow-2xs relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black text-[#1D7A9C] uppercase tracking-wider">Planner Completion</span>
+                <TrendingUp className="w-5 h-5 text-[#1D7A9C]" />
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-3xl sm:text-4xl font-black text-[#16241A] tabular-nums">{taskCompletionRate}%</p>
+                <span className="text-xs font-extrabold text-[#1D7A9C] bg-[#1D7A9C]/10 px-2 py-0.5 rounded-md">
+                  {completedPeriodPlanned}/{totalPeriodPlanned} Done
+                </span>
+              </div>
+              <p className="text-xs text-stone-600 font-medium mt-2">Prayer-anchored task fulfillment</p>
+            </div>
+
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#FAF0D8]/80 to-[#FAF0D8]/30 border border-[#C89B2E]/30 shadow-2xs relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black text-[#C89B2E] uppercase tracking-wider">Habit Logs & Streaks</span>
+                <Flame className="w-5 h-5 text-[#C89B2E]" />
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-3xl sm:text-4xl font-black text-[#16241A] tabular-nums">{totalHabitCompletions}</p>
+                <span className="text-xs font-extrabold text-[#C89B2E] bg-[#C89B2E]/10 px-2 py-0.5 rounded-md">
+                  Best: {bestHabitStreak}d
+                </span>
+              </div>
+              <p className="text-xs text-stone-600 font-medium mt-2">Routine logs recorded in period</p>
+            </div>
+
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#F0EBF8]/80 to-[#F0EBF8]/30 border border-[#7C3AED]/30 shadow-2xs relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black text-[#7C3AED] uppercase tracking-wider">Spiritual Ledger</span>
+                <Sparkles className="w-5 h-5 text-[#7C3AED]" />
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-3xl sm:text-4xl font-black text-[#16241A] tabular-nums">{prayerConsistency}%</p>
+                <span className="text-xs font-extrabold text-[#7C3AED] bg-[#7C3AED]/10 px-2 py-0.5 rounded-md">
+                  ${totalCharityGiven} Sadaqah
+                </span>
+              </div>
+              <p className="text-xs text-stone-600 font-medium mt-2">{onTimePrayers} prayers on time · {totalPagesRead} Qur'an pgs</p>
+            </div>
+          </div>
+
+          {/* Interactive Activity Progression Chart Card */}
+          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+              <div>
+                <h4 className="text-lg font-extrabold text-[#16241A] flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-[#1D7A9C]" />
+                  <span>Daily Task Completion Trend</span>
+                </h4>
+                <p className="text-xs text-stone-500 font-medium mt-0.5">
+                  Completed vs Scheduled prayer-anchored tasks over time
+                </p>
+              </div>
+              <div className="flex items-center gap-4 text-xs font-bold">
+                <span className="flex items-center gap-1.5 text-stone-600">
+                  <span className="w-3 h-3 rounded-md bg-[#1D7A9C]" />
+                  Completed
+                </span>
+                <span className="flex items-center gap-1.5 text-stone-600">
+                  <span className="w-3 h-3 rounded-md bg-stone-200" />
+                  Scheduled Total
+                </span>
+              </div>
+            </div>
+
+            {/* SVG / Flex Bar Chart */}
+            <div className="pt-2">
+              <div className="h-44 flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-stone-200 pb-2">
+                {chartDaysData.map((d) => {
+                  const compPct = maxChartVal > 0 ? (d.completed / maxChartVal) * 100 : 0;
+                  const totalPct = maxChartVal > 0 ? (d.total / maxChartVal) * 100 : 0;
+
+                  return (
+                    <div key={d.dateStr} className="flex-1 flex flex-col items-center h-full justify-end group relative">
+                      {/* Tooltip on hover */}
+                      <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-stone-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-lg pointer-events-none z-10 whitespace-nowrap">
+                        {d.label}: {d.completed} / {d.total} Done
+                      </div>
+
+                      <div className="w-full flex items-end justify-center gap-1 h-36">
+                        {/* Completed Bar */}
+                        <div
+                          style={{ height: `${Math.max(compPct, 6)}%` }}
+                          className={`w-full max-w-[28px] rounded-t-lg transition-all ${
+                            d.completed > 0 ? 'bg-[#1D7A9C] group-hover:bg-[#15607a]' : 'bg-stone-200/60'
+                          }`}
+                        />
+                        {/* Total Planned Bar */}
+                        {d.total > d.completed && (
+                          <div
+                            style={{ height: `${Math.max(totalPct - compPct, 4)}%` }}
+                            className="w-full max-w-[28px] rounded-t-lg bg-stone-200/80 group-hover:bg-stone-300 transition-all"
+                          />
+                        )}
+                      </div>
+
+                      <span className="text-[10px] sm:text-xs font-bold text-stone-500 mt-2 truncate max-w-[50px] text-center">
+                        {d.label.split(',')[0]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Multi-Domain Breakdown Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Prayer Anchor Breakdown */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                <h4 className="text-lg font-extrabold text-[#16241A] flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-[#2E8B4F]" />
+                  <span>Prayer Anchor Distribution</span>
+                </h4>
+                <span className="text-xs font-bold text-[#2E8B4F] bg-[#E1F2E7] px-2.5 py-0.5 rounded-lg">
+                  Fardh Alignment
+                </span>
+              </div>
+
+              <div className="space-y-3.5">
+                {prayerAnchorStats.map((item) => (
+                  <div key={item.prayer} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-stone-800">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#2E8B4F]" />
+                        <span>{t(item.prayer)} Prayer</span>
+                      </span>
+                      <span className="tabular-nums">
+                        {item.completed} / {item.total} tasks ({item.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-stone-100 overflow-hidden">
+                      <div
+                        className="h-full bg-[#2E8B4F] rounded-full transition-all duration-500"
+                        style={{ width: `${item.pct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-lg font-extrabold text-[#16241A]">
-                      {t('noTasksInLifeCategory')}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-stone-500 font-medium max-w-md mx-auto mt-1">
-                      {t('noTasksInLifeCategoryDesc')}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                    <button
-                      onClick={() => setSelectedCategoryFilter('all')}
-                      className="px-4 py-2.5 rounded-xl bg-[#0B2E1C] text-[#FBBF24] font-bold text-xs sm:text-sm hover:bg-[#123D28] transition-colors cursor-pointer shadow-2xs"
-                    >
-                      {t('showAllCategoriesBtn')}
-                    </button>
-                    {selectedCategoryFilter !== 'all' && (
-                      <button
-                        onClick={() => {
-                          setNewTodoCategory(selectedCategoryFilter as LifeTaskCategory);
-                        }}
-                        className="px-4 py-2.5 rounded-xl bg-[#1D7A9C] text-white font-bold text-xs sm:text-sm hover:bg-[#15607a] transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>{t('addCategoryTaskBtn')}</span>
-                      </button>
-                    )}
-                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Life Domain Breakdown */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                <h4 className="text-lg font-extrabold text-[#16241A] flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-[#1D7A9C]" />
+                  <span>Life Domain Balance</span>
+                </h4>
+                <span className="text-xs font-bold text-[#1D7A9C] bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-100">
+                  Category Audit
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {categoryStats.map(({ cat, total, completed, pct }) => {
+                  const IconComp = cat.icon;
+                  return (
+                    <div key={cat.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-stone-800">
+                        <span className="flex items-center gap-1.5">
+                          <IconComp className="w-4 h-4 text-stone-600" />
+                          <span>{t(cat.key)}</span>
+                        </span>
+                        <span className="tabular-nums font-semibold text-stone-600 text-xs">
+                          {completed} / {total} ({pct}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 rounded-full bg-stone-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500 bg-[#1D7A9C]"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Task History & Audit Ledger */}
+          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+              <div>
+                <h4 className="text-lg font-extrabold text-[#16241A] flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-[#2E8B4F]" />
+                  <span>Detailed Task Audit Ledger</span>
+                </h4>
+                <p className="text-xs text-stone-500 font-medium mt-0.5">
+                  Filterable history of tasks in the selected review timeframe ({ledgerBlocks.length} items)
+                </p>
+              </div>
+
+              {/* Status & Search Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-medium w-full sm:w-auto">
+                  <Search className="w-3.5 h-3.5 text-stone-400 mr-2 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search ledger..."
+                    value={reviewSearch}
+                    onChange={(e) => setReviewSearch(e.target.value)}
+                    className="bg-transparent outline-none text-xs text-stone-800 w-full sm:w-32"
+                  />
                 </div>
-              ) : (
-                filteredTodos.map((todo) => (
-                  <div
-                    key={todo.id}
-                    className={`p-4 rounded-2xl border flex items-center justify-between gap-3 transition-colors ${
-                      todo.completed
-                        ? 'bg-emerald-50/40 border-emerald-200/80 text-stone-600'
-                        : 'bg-white border-stone-200 text-[#16241A] hover:border-stone-300 shadow-2xs'
-                    }`}
-                  >
-                    <div className="flex items-start sm:items-center gap-3.5">
-                      <button
-                        onClick={() => handleTaskCheckClick('todo', todo)}
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition-all cursor-pointer ${
-                          todo.completed
-                            ? 'bg-[#2E8B4F] border-[#2E8B4F] text-white shadow-xs hover:bg-[#257341]'
-                            : 'border-2 border-stone-300 hover:border-[#1D7A9C] bg-white'
-                        }`}
-                        title={todo.completed ? 'Completed (Click to view verification & edit)' : 'Mark completed'}
-                      >
-                        {todo.completed && <Check className="w-4 h-4 stroke-[3]" />}
-                      </button>
+
+                <select
+                  value={reviewStatus}
+                  onChange={(e) => setReviewStatus(e.target.value as any)}
+                  className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold bg-white outline-none cursor-pointer"
+                >
+                  <option value="all">All Status</option>
+                  <option value="completed">Completed Only</option>
+                  <option value="pending">Pending Only</option>
+                </select>
+
+                <select
+                  value={reviewCategory}
+                  onChange={(e) => setReviewCategory(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold bg-white outline-none cursor-pointer"
+                >
+                  <option value="all">All Domains</option>
+                  {LIFE_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>{t(c.key)}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={reviewPriority}
+                  onChange={(e) => setReviewPriority(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold bg-white outline-none cursor-pointer"
+                >
+                  <option value="all">All Priorities</option>
+                  {PRIORITY_TAGS.map((p) => (
+                    <option key={p.id} value={p.id}>{t(p.key)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Task Ledger Table / List */}
+            {ledgerBlocks.length === 0 ? (
+              <div className="text-center py-10 px-4 border border-dashed border-stone-200 rounded-2xl bg-stone-50/50">
+                <p className="text-sm font-bold text-stone-600">No tasks found matching your review filters.</p>
+                <p className="text-xs text-stone-400 mt-1">Try broadening your date range or filter criteria.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-stone-100 max-h-96 overflow-y-auto pr-1 scrollbar-thin">
+                {ledgerBlocks.map((task) => (
+                  <div key={task.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-stone-50/80 px-2 rounded-xl transition-colors">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 ${
+                        task.completed ? 'bg-[#2E8B4F] text-white' : 'border border-stone-300 bg-white'
+                      }`}>
+                        {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      </div>
                       <div>
-                        <p className={`text-sm sm:text-base font-bold ${todo.completed ? 'line-through text-stone-500 font-semibold' : 'text-[#16241A]'}`}>
-                          {todo.title}
+                        <p className={`text-sm font-bold ${task.completed ? 'line-through text-stone-500' : 'text-[#16241A]'}`}>
+                          {task.title}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-xs text-stone-500 font-medium">Due: {todo.dueDate}</span>
-                          {getCategoryBadge(todo.category)}
-                          {getPriorityBadge(todo.priorityTag)}
-                          {todo.completed && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2E8B4F] bg-[#E1F2E7] px-2 py-0.5 rounded-md border border-[#2E8B4F]/20">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>Recorded</span>
-                            </span>
-                          )}
+                          <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
+                            {task.date || todayStr}
+                          </span>
+                          <span className="text-[11px] font-semibold text-stone-500">
+                            Anchor: <span className="font-bold text-[#2E8B4F]">{t(task.prayerAnchor)}</span>
+                          </span>
+                          {getCategoryBadge(task.category)}
+                          {getPriorityBadge(task.priorityTag)}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => openDirectEditModal('todo', todo)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-[#1D7A9C] hover:bg-stone-100 transition-colors cursor-pointer"
-                        title="Edit task"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId({ type: 'todo', id: todo.id, title: todo.title })}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                        title="Delete task"
-                      >
-                        <Trash2 className="w-4.5 h-4.5" />
-                      </button>
+                    <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                      <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg ${
+                        task.completed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                      }`}>
+                        {task.completed ? 'Completed' : 'Pending'}
+                      </span>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. TAB 4: WEEKLY & MONTHLY REVIEW SUMMARY */}
-      {activeTab === 'review' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs">
-            <h3 className="text-xl sm:text-2xl font-extrabold text-[#16241A] mb-2 tracking-tight">{t('weeklyReview')}</h3>
-            <p className="text-xs sm:text-sm text-stone-600 font-medium mb-6">
-              Holistic summary of your spiritual consistency, habits, reading, and charity
-            </p>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#E1F2E7]/50 border border-[#2E8B4F]/40 shadow-2xs">
-                <span className="text-xs sm:text-sm font-bold text-[#2E8B4F] uppercase tracking-wider">Prayer Consistency</span>
-                <p className="text-3xl sm:text-4xl font-black text-[#16241A] mt-2 tabular-nums">{prayerConsistency}%</p>
-                <p className="text-xs sm:text-sm text-stone-600 font-medium mt-1">{onTimePrayers} prayers on-time</p>
+                ))}
               </div>
-
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#FAF0D8]/50 border border-[#C89B2E]/40 shadow-2xs">
-                <span className="text-xs sm:text-sm font-bold text-[#C89B2E] uppercase tracking-wider">Qur'an Recitation</span>
-                <p className="text-3xl sm:text-4xl font-black text-[#16241A] mt-2 tabular-nums">{totalPagesRead}</p>
-                <p className="text-xs sm:text-sm text-stone-600 font-medium mt-1">Total pages read recorded</p>
-              </div>
-
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#DCF0F6]/50 border border-[#1D7A9C]/40 shadow-2xs">
-                <span className="text-xs sm:text-sm font-bold text-[#1D7A9C] uppercase tracking-wider">Habit Adherence</span>
-                <p className="text-3xl sm:text-4xl font-black text-[#16241A] mt-2 tabular-nums">82%</p>
-                <p className="text-xs sm:text-sm text-stone-600 font-medium mt-1">Average streak active</p>
-              </div>
-
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#F0EBF8]/50 border border-[#7C3AED]/30 shadow-2xs">
-                <span className="text-xs sm:text-sm font-bold text-[#7C3AED] uppercase tracking-wider">Charity & Sadaqah</span>
-                <p className="text-3xl sm:text-4xl font-black text-[#16241A] mt-2 tabular-nums">${totalCharityGiven}</p>
-                <p className="text-xs sm:text-sm text-stone-600 font-medium mt-1">Cumulative deeds recorded</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}

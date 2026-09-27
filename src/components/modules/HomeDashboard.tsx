@@ -72,31 +72,50 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#123D28] border border-[#C89B2E]/50 text-xs font-semibold text-[#FBBF24] flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse" />
-                {t('nextPrayer')}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Current Active Prayer Badge */}
+              {nextPrayerInfo?.currentPrayer && (
+                <span className="px-3 py-1 rounded-full bg-[#4ADE80]/20 border border-[#4ADE80]/50 text-xs font-extrabold text-[#4ADE80] flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse" />
+                  <span>Current: {nextPrayerInfo.currentPrayer === 'Sunrise' ? 'Sunrise (Ishraq)' : t(nextPrayerInfo.currentPrayer as PrayerName)} (Active Now)</span>
+                </span>
+              )}
+
+              <span className="px-2.5 py-0.5 rounded-full bg-[#123D28] border border-[#C89B2E]/50 text-xs font-bold text-[#FBBF24]">
+                Next: {nextPrayerInfo ? t(nextPrayerInfo.nextPrayer) : 'Asr'}
               </span>
+
               <span className="text-xs text-[#9FB6A3]">
                 {prayerTimes?.date.gregorian}
               </span>
             </div>
 
-            <div className="flex items-baseline gap-3">
-              <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-white font-serif">
-                {nextPrayerInfo ? t(nextPrayerInfo.nextPrayer) : 'Fajr'}
-              </h2>
-              <span className="text-xl lg:text-2xl font-bold text-[#FBBF24] tabular-nums">
-                {nextPrayerInfo?.nextTime}
-              </span>
+            <div className="pt-1">
+              <span className="text-xs font-black uppercase tracking-wider text-[#9FB6A3] block mb-0.5">Next Upcoming Prayer</span>
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-white font-serif">
+                  {nextPrayerInfo ? t(nextPrayerInfo.nextPrayer) : 'Fajr'}
+                </h2>
+                <span className="text-xl lg:text-2xl font-bold text-[#FBBF24] tabular-nums">
+                  {nextPrayerInfo?.nextTime}
+                </span>
+              </div>
             </div>
 
-            {/* Countdown at Hero Scale (44px mobile / 64px desktop per §4.3) */}
-            <div className="pt-2">
+            {/* Countdown at Hero Scale */}
+            <div className="pt-1">
               <p className="text-4xl lg:text-6xl font-extrabold tracking-tight text-[#F3F0E4] tabular-nums">
                 {nextPrayerInfo?.formattedCountdown || '0h 0m'}
               </p>
-              <p className="text-xs lg:text-sm text-[#9FB6A3] mt-1 flex items-center gap-2">
+              <p className="text-xs lg:text-sm text-[#9FB6A3] mt-1 flex flex-wrap items-center gap-2">
+                {nextPrayerInfo?.currentPrayer && (
+                  <>
+                    <span className="text-[#4ADE80] font-bold">
+                      Active Window: {nextPrayerInfo.currentPrayer === 'Sunrise' ? 'Sunrise' : t(nextPrayerInfo.currentPrayer as PrayerName)} ({nextPrayerInfo.currentPrayerTime})
+                    </span>
+                    <span className="text-stone-400">·</span>
+                  </>
+                )}
                 <span>{t('timeRemaining')} {t('timeUntil')} {nextPrayerInfo ? t(nextPrayerInfo.nextPrayer) : ''}</span>
                 <span className="text-stone-400">·</span>
                 <span className="text-[#4ADE80] font-semibold">{prayerStreak} {t('todayStreak')}</span>
@@ -161,16 +180,27 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             const status = getPrayerLogStatus(prayer);
             const time = prayerTimes ? prayerTimes[prayer] : '--:--';
             const isCompleted = status === 'on-time' || status === 'late' || status === 'qada';
+            const isCurrentActive = nextPrayerInfo?.currentPrayer === prayer;
 
             return (
               <div
                 key={prayer}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-                  isCompleted
+                className={`p-4 sm:p-5 rounded-2xl border transition-all relative overflow-hidden ${
+                  isCurrentActive
+                    ? 'bg-emerald-50/90 border-2 border-[#2E8B4F] text-[#16241A] shadow-md ring-2 ring-[#2E8B4F]/20'
+                    : isCompleted
                     ? 'bg-[#E1F2E7]/70 border-[#2E8B4F]/50 text-[#16241A] shadow-xs'
                     : 'bg-stone-50/80 border-stone-200 hover:border-stone-300'
                 }`}
               >
+                {isCurrentActive && (
+                  <div className="mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#2E8B4F] text-white px-2 py-0.5 rounded-full inline-block shadow-2xs">
+                      Active Now
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-base sm:text-lg font-black text-[#16241A]">{t(prayer)}</span>
                   <span className="text-xs sm:text-sm text-stone-700 font-bold bg-white/90 px-2 py-0.5 rounded-lg border border-stone-200/80">{time}</span>
