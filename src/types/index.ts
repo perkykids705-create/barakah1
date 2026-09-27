@@ -333,6 +333,10 @@ export interface DhikrPreset {
   transliteration: string;
   translation: string;
   defaultTarget: number;
+  category?: 'core' | 'durood' | 'quranic' | 'custom' | string;
+  isCustom?: boolean;
+  virtue?: string;
+  reference?: string;
 }
 
 export interface TasbihSession {

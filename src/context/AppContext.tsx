@@ -124,6 +124,8 @@ interface AppContextType {
   dailyReflections: Record<string, DailyReflection>;
   saveDailyReflection: (date: string, reflection: DailyReflection) => void;
   deleteDailyReflection: (date: string) => void;
+  addCustomDhikr: (dhikr: Omit<DhikrPreset, 'key'> & { key?: string }) => void;
+  deleteCustomDhikr: (key: string) => void;
 
   // Group Khatm
   groupTasks: GroupKhatmTask[];
@@ -181,13 +183,39 @@ const DEFAULT_ADMIN: UserProfile = {
 };
 
 const DHIKR_PRESETS: DhikrPreset[] = [
-  { key: 'subhanallah', arabic: 'سُبْحَانَ اللَّهِ', transliteration: 'SubhanAllah', translation: 'Glory be to Allah', defaultTarget: 33 },
-  { key: 'alhamdulillah', arabic: 'الْحَمْدُ لِلَّهِ', transliteration: 'Alhamdulillah', translation: 'All praise is due to Allah', defaultTarget: 33 },
-  { key: 'allahuakbar', arabic: 'اللَّهُ أَكْبَرُ', transliteration: 'Allahu Akbar', translation: 'Allah is the Greatest', defaultTarget: 34 },
-  { key: 'astaghfirullah', arabic: 'أَسْتَغْفِرُ اللَّهَ', transliteration: 'Astaghfirullah', translation: 'I seek forgiveness from Allah', defaultTarget: 100 },
-  { key: 'salawat', arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', transliteration: 'Allahumma Salli \'ala Muhammad', translation: 'Blessings upon the Prophet Muhammad', defaultTarget: 100 },
-  { key: 'lailahaillallah', arabic: 'لَا إِلَٰهَ إِلَّا اللَّهُ', transliteration: 'La ilaha illallah', translation: 'There is no god but Allah', defaultTarget: 100 },
-  { key: 'hawqalah', arabic: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', transliteration: 'La hawla wa la quwwata illa billah', translation: 'There is no might nor power except with Allah', defaultTarget: 33 },
+  { key: 'subhanallah', arabic: 'سُبْحَانَ اللَّهِ', transliteration: 'SubhanAllah', translation: 'Glory be to Allah', defaultTarget: 33, category: 'core' },
+  { key: 'alhamdulillah', arabic: 'الْحَمْدُ لِلَّهِ', transliteration: 'Alhamdulillah', translation: 'All praise is due to Allah', defaultTarget: 33, category: 'core' },
+  { key: 'allahuakbar', arabic: 'اللَّهُ أَكْبَرُ', transliteration: 'Allahu Akbar', translation: 'Allah is the Greatest', defaultTarget: 34, category: 'core' },
+  { key: 'astaghfirullah', arabic: 'أَسْتَغْفِرُ اللَّهَ', transliteration: 'Astaghfirullah', translation: 'I seek forgiveness from Allah', defaultTarget: 100, category: 'core' },
+  { key: 'salawat', arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', transliteration: "Allahumma Salli 'ala Muhammad", translation: 'Blessings upon the Prophet Muhammad', defaultTarget: 100, category: 'durood' },
+  {
+    key: 'durood_sayyidina',
+    arabic: 'اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ وَبَارِكْ وَسَلِّمْ',
+    transliteration: "Durood Sharif (Allahumma Salli 'ala Sayyidina Muhammadin wa 'ala Ali Sayyidina Muhammadin wa Baarik wa Sallim)",
+    translation: 'O Allah, send salutations upon our Master Muhammad (peace and blessings be upon him) and his family, and send mercy and blessings.',
+    virtue: 'He who reads a single Durood upon me, Almighty Allah blesses him ten times, ten of his sins are forgiven, and he is increased ten times in stages.',
+    reference: "Sunan an-Nasa'i 1297 (Book 13, Hadith 119)",
+    defaultTarget: 100,
+    category: 'durood',
+  },
+  {
+    key: 'durood_sadaqah',
+    arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ عَبْدِكَ وَرَسُولِكَ ، وَصَلِّ عَلَى الْمُؤْمِنِينَ وَالْمُؤْمِنَاتِ ، وَالْمُسْلِمِينَ وَالْمُسْلِمَاتِ',
+    transliteration: "Durood-e-Sadaqah (Allahumma Salli 'ala Muhammadin 'abdika wa rasulika...)",
+    translation: 'O Allah, send blessings upon Muhammad, Your servant and Messenger, and send blessings upon believing men and women, and Muslim men and women.',
+    defaultTarget: 100,
+    category: 'durood',
+  },
+  {
+    key: 'ayat_e_karima',
+    arabic: 'لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ',
+    transliteration: 'Ayat-e-Karima (La ilaha illa Anta subhanaka inni kuntu minaz-zalimin)',
+    translation: 'There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers (Surah Al-Anbiya 21:87)',
+    defaultTarget: 100,
+    category: 'quranic',
+  },
+  { key: 'lailahaillallah', arabic: 'لَا إِلَٰهَ إِلَّا اللَّهُ', transliteration: 'La ilaha illallah', translation: 'There is no god but Allah', defaultTarget: 100, category: 'core' },
+  { key: 'hawqalah', arabic: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', transliteration: 'La hawla wa la quwwata illa billah', translation: 'There is no might nor power except with Allah', defaultTarget: 33, category: 'core' },
 ];
 
 const INITIAL_HABITS: Habit[] = [
@@ -469,7 +497,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   // Reflection & Tasbih
-  const [dhikrPresets] = useState<DhikrPreset[]>(DHIKR_PRESETS);
+  const [dhikrPresets, setDhikrPresets] = useState<DhikrPreset[]>(() => {
+    const saved = localStorage.getItem('bd_custom_adhkar');
+    let custom: DhikrPreset[] = [];
+    if (saved) {
+      try {
+        custom = JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [...DHIKR_PRESETS, ...custom];
+  });
   const [currentDhikrKey, setCurrentDhikrKey] = useState<string>('subhanallah');
   const [tasbihCount, setTasbihCount] = useState<number>(14);
   const [dailyReflections, setDailyReflections] = useState<Record<string, DailyReflection>>(() => {
@@ -1031,6 +1068,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showNotification('Tasbih counter reset.');
   };
 
+  const addCustomDhikr = (dhikr: Omit<DhikrPreset, 'key'> & { key?: string }) => {
+    const key = dhikr.key || `custom_${Date.now()}`;
+    const newPreset: DhikrPreset = {
+      ...dhikr,
+      key,
+      isCustom: true,
+      category: dhikr.category || 'custom',
+      defaultTarget: dhikr.defaultTarget || 33,
+    };
+
+    setDhikrPresets((prev) => {
+      const updated = [...prev, newPreset];
+      // Save only custom ones to local storage
+      const customOnly = updated.filter((d) => d.isCustom);
+      localStorage.setItem('bd_custom_adhkar', JSON.stringify(customOnly));
+      return updated;
+    });
+
+    setCurrentDhikrKey(newPreset.key);
+    setTasbihCount(0);
+    showNotification(`Added "${newPreset.transliteration}" to your adhkar list!`);
+  };
+
+  const deleteCustomDhikr = (key: string) => {
+    setDhikrPresets((prev) => {
+      const updated = prev.filter((d) => d.key !== key);
+      const customOnly = updated.filter((d) => d.isCustom);
+      localStorage.setItem('bd_custom_adhkar', JSON.stringify(customOnly));
+      return updated;
+    });
+
+    if (currentDhikrKey === key) {
+      setCurrentDhikrKey(DHIKR_PRESETS[0].key);
+      setTasbihCount(0);
+    }
+    showNotification('Custom adhkar removed.');
+  };
+
   const saveDailyReflection = (date: string, reflection: DailyReflection) => {
     setDailyReflections((prev) => {
       const updated = { ...prev, [date]: reflection };
@@ -1321,6 +1396,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCurrentDhikrKey,
         incrementTasbih,
         resetTasbih,
+        addCustomDhikr,
+        deleteCustomDhikr,
         dailyReflections,
         saveDailyReflection,
         deleteDailyReflection,

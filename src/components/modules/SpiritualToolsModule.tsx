@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   Clock,
   Plus,
+  X,
+  Layers,
+  Bookmark,
 } from 'lucide-react';
 
 export const SpiritualToolsModule: React.FC = () => {
@@ -27,6 +30,8 @@ export const SpiritualToolsModule: React.FC = () => {
     setCurrentDhikrKey,
     incrementTasbih,
     resetTasbih,
+    addCustomDhikr,
+    deleteCustomDhikr,
     dailyReflections,
     saveDailyReflection,
     deleteDailyReflection,
@@ -36,6 +41,15 @@ export const SpiritualToolsModule: React.FC = () => {
   const rtl = isRTL(language);
 
   const [activeTab, setActiveTab] = useState<'tasbih' | 'journal' | 'calendar'>('tasbih');
+
+  // Adhkar & Custom Dhikr State
+  const [showAddDhikrModal, setShowAddDhikrModal] = useState(false);
+  const [dhikrCategoryFilter, setDhikrCategoryFilter] = useState<'all' | 'core' | 'durood' | 'quranic' | 'custom'>('all');
+  const [customTitle, setCustomTitle] = useState('');
+  const [customArabic, setCustomArabic] = useState('');
+  const [customTranslation, setCustomTranslation] = useState('');
+  const [customTarget, setCustomTarget] = useState<number>(100);
+  const [customCategory, setCustomCategory] = useState<'custom' | 'quranic' | 'durood' | 'core'>('custom');
 
   // Journal state
   const todayStr = new Date().toISOString().split('T')[0];
@@ -149,40 +163,155 @@ export const SpiritualToolsModule: React.FC = () => {
 
       {/* 2. TAB 1: DIGITAL TASBIH COUNTER */}
       {activeTab === 'tasbih' && (
-        <div className="max-w-xl mx-auto space-y-6">
-          <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-sm text-center relative overflow-hidden">
+        <div className="max-w-2xl mx-auto space-y-6">
+          {/* Main Tasbih Card */}
+          <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-sm text-center relative overflow-hidden space-y-6">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#0E8C74]" />
 
-            {/* Dhikr Selector */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-xs sm:text-sm font-bold text-stone-500 uppercase tracking-wider">Select Adhkar</span>
-              <select
-                value={currentDhikrKey}
-                onChange={(e) => {
-                  setCurrentDhikrKey(e.target.value);
-                  resetTasbih();
-                }}
-                className="px-4 py-2 rounded-xl border border-stone-200 bg-stone-50 text-sm font-bold outline-none cursor-pointer"
-              >
-                {dhikrPresets.map((d) => (
-                  <option key={d.key} value={d.key}>
-                    {d.transliteration} ({d.defaultTarget}x)
-                  </option>
+            {/* Top Bar: Category Filters & Add Custom Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-bold scrollbar-none">
+                {[
+                  { id: 'all' as const, label: `All (${dhikrPresets.length})` },
+                  { id: 'core' as const, label: 'Core' },
+                  { id: 'durood' as const, label: 'Durood' },
+                  { id: 'quranic' as const, label: 'Qur\'an' },
+                  { id: 'custom' as const, label: 'My Du\'as' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setDhikrCategoryFilter(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                      dhikrCategoryFilter === cat.id
+                        ? 'bg-[#0E8C74] text-white shadow-2xs'
+                        : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
                 ))}
-              </select>
+              </div>
+
+              {/* Add Custom Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomTitle('');
+                  setCustomArabic('');
+                  setCustomTranslation('');
+                  setCustomTarget(100);
+                  setCustomCategory('custom');
+                  setShowAddDhikrModal(true);
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto"
+              >
+                <Plus className="w-3.5 h-3.5 text-amber-700 stroke-[3px]" />
+                <span>+ Add Custom Du'a</span>
+              </button>
             </div>
 
-            {/* Arabic phrase */}
-            <div className="space-y-2 mb-8">
-              <h3 className="text-3xl lg:text-4xl font-arabic text-[#0B2E1C] leading-relaxed font-bold">
+            {/* Dhikr Selector Dropdown */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-50/80 p-3 rounded-2xl border border-stone-200/70 text-left">
+              <div className="w-full">
+                <span className="text-xxs font-extrabold text-stone-400 uppercase tracking-wider block mb-1">
+                  Active Selected Dhikr / Du'a
+                </span>
+                <select
+                  value={currentDhikrKey}
+                  onChange={(e) => {
+                    setCurrentDhikrKey(e.target.value);
+                    resetTasbih();
+                  }}
+                  className="w-full bg-white px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm font-bold text-stone-800 outline-none focus:border-[#0E8C74] cursor-pointer"
+                >
+                  {dhikrPresets
+                    .filter((d) => {
+                      if (dhikrCategoryFilter === 'all') return true;
+                      if (dhikrCategoryFilter === 'custom') return d.isCustom || d.category === 'custom';
+                      return d.category === dhikrCategoryFilter;
+                    })
+                    .map((d) => (
+                      <option key={d.key} value={d.key}>
+                        {d.transliteration} ({d.defaultTarget}x) {d.isCustom ? '★ (Custom)' : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {currentDhikr.isCustom && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Remove custom dhikr "${currentDhikr.transliteration}"?`)) {
+                      deleteCustomDhikr(currentDhikr.key);
+                    }
+                  }}
+                  className="p-2.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all cursor-pointer shrink-0"
+                  title="Delete this custom dhikr"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Arabic phrase & Translation */}
+            <div className="space-y-3 px-2">
+              <div className="flex items-center justify-center gap-2">
+                <span className="px-3 py-0.5 rounded-full text-xxs font-black uppercase tracking-wider bg-stone-100 text-stone-600 border border-stone-200">
+                  {currentDhikr.category === 'durood'
+                    ? 'Durood & Salawat'
+                    : currentDhikr.category === 'quranic'
+                    ? 'Qur\'anic Du\'a'
+                    : currentDhikr.isCustom
+                    ? 'My Custom Du\'a'
+                    : 'Core Dhikr'}
+                </span>
+                {currentDhikr.key === 'durood_sayyidina' && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xxs font-extrabold bg-purple-100 text-purple-900 border border-purple-200">
+                    Durood Reminders (10x Reward)
+                  </span>
+                )}
+                {currentDhikr.key === 'durood_sadaqah' && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xxs font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                    Sadaqah Virtue
+                  </span>
+                )}
+                {currentDhikr.key === 'ayat_e_karima' && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xxs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Tasbih Yunus (A.S)
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-arabic text-[#0B2E1C] leading-relaxed font-bold dir-rtl">
                 {currentDhikr.arabic}
               </h3>
               <p className="text-base sm:text-lg font-bold text-[#16241A]">{currentDhikr.transliteration}</p>
-              <p className="text-sm sm:text-base text-stone-600 font-medium max-w-md mx-auto">"{currentDhikr.translation}"</p>
+              <p className="text-xs sm:text-sm text-stone-600 font-medium max-w-lg mx-auto italic">
+                "{currentDhikr.translation}"
+              </p>
+
+              {currentDhikr.virtue && (
+                <div className="mt-2.5 p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl max-w-xl mx-auto text-left space-y-1 shadow-2xs">
+                  <div className="flex items-center gap-1.5 text-amber-900 text-xxs font-black uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Virtue & Hadith Promise</span>
+                  </div>
+                  <p className="text-xs text-stone-800 font-semibold leading-relaxed">
+                    "{currentDhikr.virtue}"
+                  </p>
+                  {currentDhikr.reference && (
+                    <span className="text-xxs text-amber-800/80 font-bold block text-right pt-0.5">
+                      — {currentDhikr.reference}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Large tactile counting button */}
-            <div className="relative py-4 flex flex-col items-center justify-center">
+            <div className="relative py-2 flex flex-col items-center justify-center">
               <button
                 onClick={incrementTasbih}
                 className="w-52 h-52 sm:w-56 sm:h-56 rounded-full bg-gradient-to-b from-[#0B2E1C] via-[#123D28] to-[#1E5738] hover:brightness-110 text-white flex flex-col items-center justify-center shadow-2xl active:scale-95 transition-all cursor-pointer border-8 border-[#0E8C74]/40 hover:border-[#0E8C74]"
@@ -195,15 +324,292 @@ export const SpiritualToolsModule: React.FC = () => {
                 </span>
               </button>
 
+              {/* Progress bar towards target */}
+              <div className="w-48 sm:w-56 mt-4">
+                <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-200">
+                  <div
+                    className="bg-[#0E8C74] h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, Math.round((tasbihCount / currentDhikr.defaultTarget) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-xxs font-extrabold text-stone-400 mt-1">
+                  <span>0</span>
+                  <span>{Math.round((tasbihCount / currentDhikr.defaultTarget) * 100)}%</span>
+                  <span>{currentDhikr.defaultTarget}</span>
+                </div>
+              </div>
+
               <button
                 onClick={resetTasbih}
-                className="mt-6 flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 font-bold px-4 py-2 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+                className="mt-4 flex items-center gap-2 text-xs sm:text-sm text-stone-500 hover:text-stone-800 font-bold px-4 py-2 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>{t('resetCount')}</span>
               </button>
             </div>
           </div>
+
+          {/* ALL ADHKAR & DU'AS LIBRARY DIRECTORY */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <div>
+                <h4 className="text-base sm:text-lg font-black text-[#16241A]">Adhkar & Du'as Library</h4>
+                <p className="text-xs text-stone-500 font-medium">Click any dhikr below to load it into your digital counter</p>
+              </div>
+              <span className="text-xs font-black text-[#0E8C74] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                {dhikrPresets.length} Total
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+              {dhikrPresets.map((d) => {
+                const isSelected = d.key === currentDhikrKey;
+
+                return (
+                  <div
+                    key={d.key}
+                    onClick={() => {
+                      setCurrentDhikrKey(d.key);
+                      resetTasbih();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-emerald-50/60 border-[#0E8C74] ring-2 ring-[#0E8C74]/20 shadow-2xs'
+                        : 'bg-stone-50 hover:bg-stone-100/70 border-stone-200'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xxs font-extrabold uppercase px-2 py-0.5 rounded-md bg-stone-200/80 text-stone-700">
+                          {d.category || (d.isCustom ? 'Custom' : 'Dhikr')}
+                        </span>
+                        <span className="text-xxs font-bold text-stone-500">
+                          {d.defaultTarget}x target
+                        </span>
+                      </div>
+                      <p className="text-xs font-extrabold text-[#16241A] line-clamp-1">{d.transliteration}</p>
+                      <p className="text-sm font-arabic text-[#0B2E1C] line-clamp-1">{d.arabic}</p>
+                      <p className="text-xxs text-stone-500 line-clamp-1 italic">"{d.translation}"</p>
+                      {d.reference && (
+                        <p className="text-xxs text-amber-800 font-bold line-clamp-1 mt-0.5">
+                          ★ {d.reference}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between border-t border-stone-200/60 mt-2">
+                      <span className={`text-xxs font-black ${isSelected ? 'text-[#0E8C74]' : 'text-stone-400'}`}>
+                        {isSelected ? '● Active in Counter' : 'Tap to Count'}
+                      </span>
+
+                      {d.isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Remove custom dhikr "${d.transliteration}"?`)) {
+                              deleteCustomDhikr(d.key);
+                            }
+                          }}
+                          className="text-stone-400 hover:text-red-500 p-1"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* MODAL: ADD CUSTOM DU'A / ADHKAR */}
+          {showAddDhikrModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-stone-200 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+                      <Sparkles className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-[#16241A]">Add Custom Du'a or Dhikr</h4>
+                      <p className="text-xs text-stone-500 font-semibold">Add any personal du'a, ayah or special litany</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDhikrModal(false)}
+                    className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Instant Templates */}
+                <div className="space-y-1.5">
+                  <span className="text-xxs font-black text-stone-400 uppercase tracking-wider block">
+                    Quick Templates (1-Tap to Autofill)
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      {
+                        title: 'Hasbunallahu wa ni\'mal wakeel',
+                        arabic: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
+                        translation: 'Allah is sufficient for us, and He is the best disposer of affairs (Surah Ali \'Imran 3:173)',
+                        target: 100,
+                        cat: 'quranic' as const,
+                      },
+                      {
+                        title: 'Rabbana atina fid-dunya hasanatan...',
+                        arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+                        translation: 'Our Lord, give us in this world good and in the Hereafter good and protect us from the Fire',
+                        target: 33,
+                        cat: 'quranic' as const,
+                      },
+                      {
+                        title: 'SubhanAllahi wa bihamdihi SubhanAllahil Azeem',
+                        arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ',
+                        translation: 'Glory be to Allah and His praise, glory be to Allah the Almighty',
+                        target: 100,
+                        cat: 'core' as const,
+                      },
+                      {
+                        title: 'Dua for Parents (Rabbir Hamhuma...)',
+                        arabic: 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا',
+                        translation: 'My Lord, have mercy upon them as they brought me up when I was small (17:24)',
+                        target: 70,
+                        cat: 'quranic' as const,
+                      },
+                    ].map((tmpl, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setCustomTitle(tmpl.title);
+                          setCustomArabic(tmpl.arabic);
+                          setCustomTranslation(tmpl.translation);
+                          setCustomTarget(tmpl.target);
+                          setCustomCategory(tmpl.cat);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-xxs font-extrabold transition-all cursor-pointer"
+                      >
+                        + {tmpl.title.split(' ')[0]}...
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!customTitle.trim()) return;
+                    addCustomDhikr({
+                      transliteration: customTitle.trim(),
+                      arabic: customArabic.trim() || customTitle.trim(),
+                      translation: customTranslation.trim() || 'Custom personal supplication',
+                      defaultTarget: Number(customTarget) || 33,
+                      category: customCategory,
+                    });
+                    setShowAddDhikrModal(false);
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Du'a / Dhikr Title (Transliteration) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Hasbunallahu wa ni'mal wakeel or Dua for Anxiety"
+                      value={customTitle}
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#0E8C74]"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      Arabic Text (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="اللَّهُمَّ..."
+                      value={customArabic}
+                      onChange={(e) => setCustomArabic(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-base font-arabic text-stone-900 outline-none focus:border-[#0E8C74] dir-rtl"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                      English Translation / Meaning
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Allah is sufficient for us..."
+                      value={customTranslation}
+                      onChange={(e) => setCustomTranslation(e.target.value)}
+                      className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-medium text-stone-800 outline-none focus:border-[#0E8C74]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Target Repetitions (Count)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={customTarget}
+                        onChange={(e) => setCustomTarget(Number(e.target.value))}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#0E8C74]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-black text-stone-700 uppercase tracking-wider mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value as any)}
+                        className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm font-bold text-stone-800 outline-none focus:border-[#0E8C74] cursor-pointer"
+                      >
+                        <option value="custom">Personal Du'a</option>
+                        <option value="quranic">Qur'anic Supplication</option>
+                        <option value="durood">Durood / Salawat</option>
+                        <option value="core">Tasbih / Tahlil</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddDhikrModal(false)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs uppercase"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#0E8C74] hover:bg-[#0b705d] text-white font-extrabold text-xs uppercase tracking-wider shadow-xs cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4 stroke-[3px]" />
+                      <span>Add to My Adhkar</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
