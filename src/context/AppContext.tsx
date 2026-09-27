@@ -123,6 +123,7 @@ interface AppContextType {
   resetTasbih: () => void;
   dailyReflections: Record<string, DailyReflection>;
   saveDailyReflection: (date: string, reflection: DailyReflection) => void;
+  deleteDailyReflection: (date: string) => void;
 
   // Group Khatm
   groupTasks: GroupKhatmTask[];
@@ -471,7 +472,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [dhikrPresets] = useState<DhikrPreset[]>(DHIKR_PRESETS);
   const [currentDhikrKey, setCurrentDhikrKey] = useState<string>('subhanallah');
   const [tasbihCount, setTasbihCount] = useState<number>(14);
-  const [dailyReflections, setDailyReflections] = useState<Record<string, DailyReflection>>({});
+  const [dailyReflections, setDailyReflections] = useState<Record<string, DailyReflection>>(() => {
+    const saved = localStorage.getItem('bd_daily_reflections');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      '2026-09-27': {
+        date: '2026-09-27',
+        niyyah: 'To perform all five prayers on time with full khushu and speak words of kindness to family and colleagues.',
+        gratitude: 'Alhamdulillah for sound health, peace of heart, and the morning quietude for Quran recitation.',
+        reflection: 'Reflecting on Surah Ash-Sharh: "Indeed, with hardship comes ease." Striving to trust Allah in every decree.',
+      },
+      '2026-09-26': {
+        date: '2026-09-26',
+        niyyah: 'To guard my tongue against idle talk, maintain wudu, and give secret Sadaqah before Maghrib.',
+        gratitude: 'Grateful for shelter, clean running water, and family companionship over evening dinner.',
+        reflection: 'Hadith: "The most beloved people to Allah are those who are most beneficial to people." Striving to be of service today.',
+      },
+      '2026-09-24': {
+        date: '2026-09-24',
+        niyyah: 'To begin the day with Istighfar and seek knowledge that benefits in this life and the hereafter.',
+        gratitude: 'Alhamdulillah for guidance, opportunities to learn, and the gift of another day to seek forgiveness.',
+        reflection: 'Contemplated the fleeting nature of this dunya. May Allah allow us to build for the Akhirah.',
+      },
+    };
+  });
 
   // Group Khatm Tasks
   const [groupTasks, setGroupTasks] = useState<GroupKhatmTask[]>([
@@ -1004,8 +1032,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const saveDailyReflection = (date: string, reflection: DailyReflection) => {
-    setDailyReflections((prev) => ({ ...prev, [date]: reflection }));
+    setDailyReflections((prev) => {
+      const updated = { ...prev, [date]: reflection };
+      localStorage.setItem('bd_daily_reflections', JSON.stringify(updated));
+      return updated;
+    });
     showNotification('Daily intention & gratitude saved.');
+  };
+
+  const deleteDailyReflection = (date: string) => {
+    setDailyReflections((prev) => {
+      const updated = { ...prev };
+      delete updated[date];
+      localStorage.setItem('bd_daily_reflections', JSON.stringify(updated));
+      return updated;
+    });
+    showNotification('Reflection entry deleted.');
   };
 
   // Group Khatm Tasks
@@ -1281,6 +1323,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         resetTasbih,
         dailyReflections,
         saveDailyReflection,
+        deleteDailyReflection,
         groupTasks,
         createGroupTask,
         claimGroupTaskPortion,

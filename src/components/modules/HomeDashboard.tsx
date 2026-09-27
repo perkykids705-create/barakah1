@@ -12,7 +12,6 @@ import {
   Flame,
   Moon,
   Plus,
-  Compass,
 } from 'lucide-react';
 import { PrayerName, PrayerStatus } from '../../types';
 
@@ -523,10 +522,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             className="p-5 rounded-2xl border border-stone-200 hover:border-emerald-500/50 hover:bg-emerald-50/30 transition-all text-left group cursor-pointer"
           >
             <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold mb-3 group-hover:scale-105 transition-transform">
-              <Compass className="w-6 h-6" />
+              <Sparkles className="w-6 h-6" />
             </div>
-            <h4 className="text-base sm:text-lg font-bold text-[#16241A] mb-1">{t('qiblaCompass')}</h4>
-            <p className="text-xs sm:text-sm text-stone-600 font-medium">{t('bearingTowardsKaaba')}</p>
+            <h4 className="text-base sm:text-lg font-bold text-[#16241A] mb-1">{t('digitalTasbih')}</h4>
+            <p className="text-xs sm:text-sm text-stone-600 font-medium">{t('tapToCount')}</p>
           </button>
 
           <button
