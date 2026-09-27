@@ -1518,8 +1518,8 @@ export const QuranModule: React.FC = () => {
                     </div>
 
                     {logType === 'surah' ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2 space-y-1">
                           <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-2">Surah Name</label>
                           <select
                             value={logSurahName}
@@ -1533,7 +1533,7 @@ export const QuranModule: React.FC = () => {
                             ))}
                           </select>
                         </div>
-                        <div className="space-y-1">
+                        <div className="sm:col-span-1 space-y-1">
                           <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-2">Ayah Number</label>
                           <input
                             type="number"
@@ -1545,8 +1545,8 @@ export const QuranModule: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2 space-y-1">
                           <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-2">Juz (Para)</label>
                           <select
                             value={logJuzNumber}
@@ -1560,7 +1560,7 @@ export const QuranModule: React.FC = () => {
                             ))}
                           </select>
                         </div>
-                        <div className="space-y-1">
+                        <div className="sm:col-span-1 space-y-1">
                           <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-2">Ayah Number</label>
                           <input
                             type="number"
@@ -1573,7 +1573,7 @@ export const QuranModule: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-2">
                           Amount read ({activeJourney.type})
@@ -1661,9 +1661,11 @@ export const QuranModule: React.FC = () => {
                       <Target className="w-5 h-5 text-[#C89B2E]" />
                       <span>Set Custom Milestone Option</span>
                     </h4>
-                    <form onSubmit={handleAddCustomMilestone} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                      <div className="sm:col-span-2 space-y-1">
-                        <label className="block text-xs font-black text-stone-500 uppercase tracking-wider">Milestone Name / Goal Description</label>
+                    <form onSubmit={handleAddCustomMilestone} className="space-y-3.5">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-black text-stone-600 uppercase tracking-wider">
+                          Milestone Name / Goal Description
+                        </label>
                         <input
                           type="text"
                           required
@@ -1673,9 +1675,11 @@ export const QuranModule: React.FC = () => {
                           className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C89B2E] transition-all shadow-xxs"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label className="block text-xs font-black text-stone-500 uppercase tracking-wider">Target Value ({activeJourney.type})</label>
-                        <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                        <div className="space-y-1">
+                          <label className="block text-xs font-black text-stone-600 uppercase tracking-wider">
+                            Target Value ({activeJourney.type})
+                          </label>
                           <input
                             type="number"
                             required
@@ -1684,13 +1688,14 @@ export const QuranModule: React.FC = () => {
                             onChange={(e) => setNewMilestoneValue(Number(e.target.value))}
                             className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C89B2E] transition-all shadow-xxs"
                           />
-                          <button
-                            type="submit"
-                            className="px-5 py-3.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-sm font-black transition-all shadow-xs cursor-pointer shrink-0"
-                          >
-                            Add
-                          </button>
                         </div>
+                        <button
+                          type="submit"
+                          className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-sm font-black uppercase tracking-wider transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Milestone</span>
+                        </button>
                       </div>
                     </form>
                   </div>
