@@ -1478,11 +1478,11 @@ export const QuranModule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Two Column Work Dashboard */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Two Column Work Dashboard - Equal 50/50 Desktop Split */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                 
                 {/* 1. Log a Reading Block Form */}
-                <div className="lg:col-span-1 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs space-y-4">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs space-y-4 flex flex-col justify-between">
                   <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] flex items-center gap-2.5">
                     <Bookmark className="w-5 h-5 text-[#C89B2E]" />
                     <span>Record Reading Log</span>
@@ -1621,7 +1621,7 @@ export const QuranModule: React.FC = () => {
                 </div>
 
                 {/* 2. Reading Logs History List */}
-                <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs flex flex-col justify-between">
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs flex flex-col justify-between">
                   <div>
                     <h4 className="text-lg sm:text-xl font-extrabold text-[#16241A] mb-5 flex items-center gap-2">
                       <History className="w-5 h-5 text-[#C89B2E]" />
