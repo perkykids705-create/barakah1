@@ -132,9 +132,9 @@ export const ZakatModule: React.FC = () => {
 
       {/* 2. TAB 1: ZAKAT CALCULATOR */}
       {activeTab === 'calculator' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Inputs Form */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs space-y-6">
+        <div className="space-y-6">
+          {/* Inputs Form (Full width top) */}
+          <div className="bg-white rounded-3xl p-6 lg:p-8 border border-stone-200 shadow-xs space-y-6">
             
             {/* Header with Title and Nisab Selector */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-stone-200">
@@ -191,7 +191,7 @@ export const ZakatModule: React.FC = () => {
             </div>
 
             {/* Form grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               <div className="space-y-1">
                 <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
                   {t('cashSavingsLabel')} ($ USD)
@@ -212,6 +212,18 @@ export const ZakatModule: React.FC = () => {
                   type="number"
                   value={investments}
                   onChange={(e) => setInvestments(Number(e.target.value))}
+                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
+                  {t('businessAssets')} ($ USD)
+                </label>
+                <input
+                  type="number"
+                  value={businessInventory}
+                  onChange={(e) => setBusinessInventory(Number(e.target.value))}
                   className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
                 />
               </div>
@@ -269,18 +281,6 @@ export const ZakatModule: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider mb-1.5">
-                  {t('businessAssets')} ($ USD)
-                </label>
-                <input
-                  type="number"
-                  value={businessInventory}
-                  onChange={(e) => setBusinessInventory(Number(e.target.value))}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-3 text-sm sm:text-base font-extrabold text-stone-800 outline-none focus:border-[#C1541F] transition-all shadow-xxs"
-                />
-              </div>
-
-              <div className="space-y-1">
                 <label className="block text-xs sm:text-sm font-black text-rose-800 uppercase tracking-wider mb-1.5">
                   Less: Immediate Liabilities / Debts ($)
                 </label>
@@ -294,73 +294,104 @@ export const ZakatModule: React.FC = () => {
             </div>
           </div>
 
-          {/* Results Summary Card */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs relative overflow-hidden">
+          {/* Results Summary & History Section (Placed Below Zakat Calculator) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+            
+            {/* Zakat Assessment Dashboard Card */}
+            <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs relative overflow-hidden flex flex-col justify-between space-y-6">
               <div className="absolute top-0 left-0 right-0 h-2 bg-[#C1541F]" />
-              <h4 className="text-sm sm:text-base font-extrabold text-stone-500 uppercase tracking-wider mb-4">
-                Zakat Assessment
-              </h4>
-
-              <div className="space-y-3.5 pb-5 border-b border-stone-200/80 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-stone-600 font-medium">Gross Zakatable Wealth:</span>
-                  <span className="font-bold text-[#16241A] tabular-nums">${totalAssets.toFixed(2)}</span>
+              
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-stone-100 pb-3">
+                  <h4 className="text-lg sm:text-xl font-black text-[#16241A] flex items-center gap-2">
+                    <Calculator className="w-5 h-5 text-[#C1541F]" />
+                    <span>Zakat Assessment & Obligation Summary</span>
+                  </h4>
+                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-stone-100 text-stone-700 border border-stone-200 self-start sm:self-auto">
+                    Threshold: {nisabStandard === 'gold' ? 'Gold (87.48g)' : 'Silver (612.36g)'}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-600 font-medium">Deductible Debts:</span>
-                  <span className="font-bold text-red-600 tabular-nums">-${debts.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-base">
-                  <span className="text-[#16241A]">Net Zakatable Pool:</span>
-                  <span className="text-[#16241A] tabular-nums">${netZakatable.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-stone-600 font-medium">
-                  <span>Nisab Threshold ({nisabStandard}):</span>
-                  <span className="tabular-nums font-bold">${nisabThreshold.toFixed(2)}</span>
-                </div>
-              </div>
 
-              {/* Big Due Number */}
-              <div className="py-5 text-center">
-                <span className="text-sm font-bold text-stone-500 block">
-                  {isEligibleForZakat ? 'Total Zakat Due (2.5%)' : 'Wealth Below Nisab Threshold'}
-                </span>
-                <p className="text-4xl sm:text-5xl font-black text-[#C1541F] mt-2 tabular-nums tracking-tight">
-                  ${zakatDue.toFixed(2)}
-                </p>
-                <span className="text-xs sm:text-sm text-stone-500 font-medium mt-1.5 block">
-                  {isEligibleForZakat ? 'Purification due on lunar year anniversary' : 'No Zakat obligation applies'}
-                </span>
-              </div>
-
-              <button
-                onClick={handleSaveCalculation}
-                className="w-full py-3.5 rounded-2xl bg-[#C1541F] hover:bg-[#a94515] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
-              >
-                Save Calculation Record
-              </button>
-            </div>
-
-            {/* Prior Year History */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs">
-              <h5 className="text-sm font-bold text-stone-500 uppercase tracking-wider mb-3.5 flex items-center gap-2">
-                <History className="w-4 h-4" /> Prior Year Calculations
-              </h5>
-              <div className="space-y-2.5">
-                {zakatCalculations.map((c) => (
-                  <div key={c.id} className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex justify-between text-sm">
-                    <div>
-                      <span className="font-bold text-[#16241A]">{c.date}</span>
-                      <p className="text-xs text-stone-500 font-medium mt-0.5">Net: ${c.netZakatable.toLocaleString()}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+                  {/* Left: Financial breakdown */}
+                  <div className="space-y-3 p-4 sm:p-5 rounded-2xl bg-stone-50 border border-stone-200/80 text-sm flex flex-col justify-center">
+                    <div className="flex justify-between">
+                      <span className="text-stone-600 font-medium">Gross Zakatable Wealth:</span>
+                      <span className="font-extrabold text-[#16241A] tabular-nums">${totalAssets.toFixed(2)}</span>
                     </div>
-                    <span className="font-extrabold text-[#C1541F] self-center">
-                      ${c.zakatDue.toFixed(2)} Paid
+                    <div className="flex justify-between">
+                      <span className="text-stone-600 font-medium">Deductible Liabilities / Debts:</span>
+                      <span className="font-extrabold text-red-600 tabular-nums">-${debts.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-black text-base border-t border-stone-200 pt-2.5">
+                      <span className="text-[#16241A]">Net Zakatable Pool:</span>
+                      <span className="text-[#16241A] tabular-nums">${netZakatable.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-stone-600 font-medium text-xs pt-0.5">
+                      <span>Nisab Threshold ({nisabStandard}):</span>
+                      <span className="tabular-nums font-bold text-stone-800">${nisabThreshold.toFixed(2)} USD</span>
+                    </div>
+                  </div>
+
+                  {/* Right: Big Due Amount Display */}
+                  <div className="text-center p-5 rounded-2xl bg-[#FAE5D8]/40 border border-[#C1541F]/20 flex flex-col justify-center items-center">
+                    <span className="text-xs sm:text-sm font-extrabold text-stone-600 uppercase tracking-wider block">
+                      {isEligibleForZakat ? 'Total Zakat Due (2.5%)' : 'Wealth Below Nisab'}
+                    </span>
+                    <p className="text-4xl sm:text-5xl font-black text-[#C1541F] my-2 tabular-nums tracking-tight">
+                      ${zakatDue.toFixed(2)}
+                    </p>
+                    <span className="text-xs text-stone-500 font-semibold block">
+                      {isEligibleForZakat
+                        ? 'Payable once per lunar year on surplus wealth'
+                        : 'No mandatory Zakat obligation at this time'}
                     </span>
                   </div>
-                ))}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={handleSaveCalculation}
+                  className="w-full py-3.5 rounded-2xl bg-[#C1541F] hover:bg-[#a94515] text-white font-extrabold text-sm sm:text-base uppercase tracking-wider transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Coins className="w-5 h-5" />
+                  <span>Save Calculation Record</span>
+                </button>
               </div>
             </div>
+
+            {/* Prior Year History Card */}
+            <div className="lg:col-span-1 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-xs flex flex-col justify-between space-y-4">
+              <div>
+                <h5 className="text-sm font-extrabold text-stone-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <History className="w-4 h-4 text-[#C1541F]" />
+                  <span>Prior Year Calculations</span>
+                </h5>
+                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                  {zakatCalculations.length === 0 ? (
+                    <p className="text-xs text-stone-400 font-bold text-center py-8">No saved calculation records yet.</p>
+                  ) : (
+                    zakatCalculations.map((c) => (
+                      <div key={c.id} className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex justify-between items-center text-sm">
+                        <div>
+                          <span className="font-extrabold text-[#16241A]">{c.date}</span>
+                          <p className="text-xs text-stone-500 font-medium mt-0.5">Net: ${c.netZakatable.toLocaleString()}</p>
+                        </div>
+                        <span className="font-black text-[#C1541F] tabular-nums">
+                          ${c.zakatDue.toFixed(2)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-stone-100 text-xs text-stone-400 font-medium text-center">
+                History is preserved for your tax & lunar year tracking
+              </div>
+            </div>
+
           </div>
         </div>
       )}
