@@ -116,6 +116,29 @@ export interface HifzRecord {
   notes?: string;
 }
 
+export type HifzTaskType = 'memorization' | 'revision' | 'tajweed';
+export type HifzTaskStatus = 'pending' | 'in-progress' | 'completed';
+
+export interface HifzTask {
+  id: string;
+  title: string;
+  surahNumber: number;
+  surahName: string;
+  startAyah: number;
+  endAyah: number;
+  totalVersesInTask: number;
+  type: HifzTaskType;
+  status: HifzTaskStatus;
+  targetRepetitions: number;
+  completedRepetitions: number;
+  targetDate: string;
+  notes?: string;
+  startedAt?: string;
+  completedAt?: string;
+  timeSpentSeconds?: number;
+  masteryLevel?: number;
+}
+
 export interface QuranReadingLog {
   id: string;
   date: string;
