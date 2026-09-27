@@ -153,10 +153,10 @@ const TRANSLATIONS_LIST = [
 ];
 
 const RECITERS_LIST = [
-  { id: 'mishari_rashid_al_afasy', name: 'Mishary Rashid Alafasy' },
-  { id: 'sudais', name: 'Abdul Rahman Al-Sudais' },
-  { id: 'maher_al_muaiqly', name: 'Maher Al-Muaiqly' },
-  { id: 'sa3d_al_ghamidi', name: 'Saad Al-Ghamdi' },
+  { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
+  { id: 'ar.abdurrahmaansudais', name: 'Abdul Rahman Al-Sudais' },
+  { id: 'ar.mahermuaiqly', name: 'Maher Al-Muaiqly' },
+  { id: 'ar.saoodshuraym', name: 'Saud Al-Shuraim' },
 ];
 
 export const QuranModule: React.FC = () => {
@@ -184,9 +184,10 @@ export const QuranModule: React.FC = () => {
   const [versesError, setVersesError] = useState<string | null>(null);
   const [selectedTranslation, setSelectedTranslation] = useState<number>(131); // Default is Clear Quran
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xlarge'>('large');
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // HTML5 Audio States
-  const [selectedReciter, setSelectedReciter] = useState<string>('mishari_rashid_al_afasy');
+  const [selectedReciter, setSelectedReciter] = useState<string>('ar.alafasy');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [audioProgress, setAudioProgress] = useState<number>(0);
   const [audioDuration, setAudioDuration] = useState<number>(0);
@@ -213,7 +214,7 @@ export const QuranModule: React.FC = () => {
 
   const khatmPercent = Math.min(100, Math.round((khatmGoal.currentPagesRead / khatmGoal.totalPages) * 100));
 
-  // Load verses from Quran.com API when selected Surah or Translation changes
+  // Load verses from Quran.com API when selected Surah, Translation, or Page changes
   useEffect(() => {
     if (!selectedSurah) {
       setVerses([]);
@@ -228,9 +229,9 @@ export const QuranModule: React.FC = () => {
       setLoadingVerses(true);
       setVersesError(null);
       try {
-        const total = selectedSurah.totalVerses || 10;
+        const versesPerPage = 20;
         const res = await fetch(
-          `https://api.quran.com/api/v4/verses/by_chapter/${selectedSurah.number}?language=en&translations=${selectedTranslation}&fields=text_uthmani&per_page=${total}`
+          `https://api.quran.com/api/v4/verses/by_chapter/${selectedSurah.number}?language=en&translations=${selectedTranslation}&fields=text_uthmani&per_page=${versesPerPage}&page=${currentPage}`
         );
         if (!res.ok) {
           throw new Error(`Failed to fetch verses from Quran.com API: status ${res.status}`);
@@ -250,14 +251,13 @@ export const QuranModule: React.FC = () => {
     };
 
     fetchVerses();
-  }, [selectedSurah, selectedTranslation]);
+  }, [selectedSurah, selectedTranslation, currentPage]);
 
   // Sync audio source when selected Surah or Reciter changes
   useEffect(() => {
     if (!selectedSurah) return;
 
-    const paddedNumber = String(selectedSurah.number).padStart(3, '0');
-    const audioUrl = `https://download.quranicaudio.com/quran/${selectedReciter}/${paddedNumber}.mp3`;
+    const audioUrl = `https://cdn.alquran.cloud/media/audio/surah/${selectedReciter}/${selectedSurah.number}.mp3`;
 
     if (audioRef.current) {
       audioRef.current.pause();
@@ -524,8 +524,45 @@ export const QuranModule: React.FC = () => {
                 </div>
               </div>
 
+              {/* Pagination Controls - TOP */}
+              {selectedSurah && Math.ceil(selectedSurah.totalVerses / 20) > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 bg-stone-50 border border-stone-200 rounded-2xl">
+                  <span className="text-xs sm:text-sm font-extrabold text-stone-700 order-2 sm:order-1">
+                    Page {currentPage} of {Math.ceil(selectedSurah.totalVerses / 20)} (Ayahs {(currentPage - 1) * 20 + 1}–{Math.min(currentPage * 20, selectedSurah.totalVerses)})
+                  </span>
+                  <div className="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-start">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => {
+                        setCurrentPage((prev) => Math.max(1, prev - 1));
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                        currentPage === 1
+                          ? 'opacity-40 cursor-not-allowed bg-stone-200 text-stone-500'
+                          : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 cursor-pointer'
+                      }`}
+                    >
+                      Previous Page
+                    </button>
+                    <button
+                      disabled={currentPage === Math.ceil(selectedSurah.totalVerses / 20)}
+                      onClick={() => {
+                        setCurrentPage((prev) => Math.min(Math.ceil(selectedSurah.totalVerses / 20), prev + 1));
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                        currentPage === Math.ceil(selectedSurah.totalVerses / 20)
+                          ? 'opacity-40 cursor-not-allowed bg-stone-200 text-stone-500'
+                          : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 cursor-pointer'
+                      }`}
+                    >
+                      Next Page
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Bismillah Header Calligraphy for appropriate Surahs */}
-              {selectedSurah.number !== 9 && (
+              {selectedSurah.number !== 9 && currentPage === 1 && (
                 <div className="text-center py-6">
                   <span className="text-3xl lg:text-4xl font-arabic text-[#0B2E1C] leading-normal select-none">
                     بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
@@ -591,6 +628,43 @@ export const QuranModule: React.FC = () => {
                 )}
               </div>
 
+              {/* Pagination Controls - BOTTOM */}
+              {selectedSurah && Math.ceil(selectedSurah.totalVerses / 20) > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 bg-stone-50 border border-stone-200 rounded-2xl">
+                  <span className="text-xs sm:text-sm font-extrabold text-stone-700 order-2 sm:order-1">
+                    Page {currentPage} of {Math.ceil(selectedSurah.totalVerses / 20)} (Ayahs {(currentPage - 1) * 20 + 1}–{Math.min(currentPage * 20, selectedSurah.totalVerses)})
+                  </span>
+                  <div className="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-start">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => {
+                        setCurrentPage((prev) => Math.max(1, prev - 1));
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                        currentPage === 1
+                          ? 'opacity-40 cursor-not-allowed bg-stone-200 text-stone-500'
+                          : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 cursor-pointer'
+                      }`}
+                    >
+                      Previous Page
+                    </button>
+                    <button
+                      disabled={currentPage === Math.ceil(selectedSurah.totalVerses / 20)}
+                      onClick={() => {
+                        setCurrentPage((prev) => Math.min(Math.ceil(selectedSurah.totalVerses / 20), prev + 1));
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                        currentPage === Math.ceil(selectedSurah.totalVerses / 20)
+                          ? 'opacity-40 cursor-not-allowed bg-stone-200 text-stone-500'
+                          : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 cursor-pointer'
+                      }`}
+                    >
+                      Next Page
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* End of Surah Log Assistant */}
               <div className="pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-xs sm:text-sm font-semibold text-stone-500">Completed reading Surah {selectedSurah.name}?</p>
@@ -626,7 +700,10 @@ export const QuranModule: React.FC = () => {
                 {filteredSurahs.map((surah) => (
                   <div
                     key={surah.number}
-                    onClick={() => setSelectedSurah(surah)}
+                    onClick={() => {
+                      setSelectedSurah(surah);
+                      setCurrentPage(1);
+                    }}
                     className="p-5 rounded-3xl bg-white border border-stone-200 hover:border-[#C89B2E] hover:shadow-xs transition-all cursor-pointer flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3.5">
