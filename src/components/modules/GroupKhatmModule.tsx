@@ -32,6 +32,42 @@ export const GroupKhatmModule: React.FC = () => {
   const t = useTranslation(language);
   const rtl = isRTL(language);
 
+  // Helper functions for localized titles and descriptions of initial demo tasks
+  const getLocalizedTaskTitle = (task: GroupKhatmTask): string => {
+    if (task.id === 'tsk_001') {
+      return t('defaultTask1Title');
+    }
+    if (task.id === 'tsk_002') {
+      return t('defaultTask2Title');
+    }
+    return task.title;
+  };
+
+  const getLocalizedTaskDesc = (task: GroupKhatmTask): string => {
+    if (task.id === 'tsk_001') {
+      return t('defaultTask1Desc');
+    }
+    if (task.id === 'tsk_002') {
+      return t('defaultTask2Desc');
+    }
+    return task.description;
+  };
+
+  const getLocalizedTargetSurah = (surahName?: string): string => {
+    if (!surahName) return '';
+    if (surahName.includes('Ya-Sin') || surahName.includes('36')) {
+      return t('defaultSurahYasin');
+    }
+    return surahName;
+  };
+
+  const getLocalizedTaskStatus = (status: string): string => {
+    if (status === 'active') return t('statusActive');
+    if (status === 'completed') return t('statusCompleted');
+    if (status === 'closed') return t('statusClosed');
+    return status;
+  };
+
   const [selectedTask, setSelectedTask] = useState<GroupKhatmTask | null>(groupTasks[0] || null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -75,16 +111,16 @@ export const GroupKhatmModule: React.FC = () => {
     if (found) {
       setSelectedTask(found);
       setJoinCodeInput('');
-      showNotification(`Joined task: ${found.title}`);
+      showNotification(`${t('joinedTaskNotice')} ${getLocalizedTaskTitle(found)}`);
     } else {
-      showNotification(`No active khatm task found with code ${code}`);
+      showNotification(`${t('noTaskFoundWithCode')} ${code}`);
     }
   };
 
   const copyJoinLink = (task: GroupKhatmTask) => {
     const link = `${window.location.origin}/#join=${task.code}`;
     navigator.clipboard?.writeText?.(link);
-    showNotification(`Join link & code (${task.code}) copied to clipboard!`);
+    showNotification(`${t('copiedJoinLink')} (${task.code})`);
   };
 
   const currentTask = selectedTask ? groupTasks.find((t) => t.id === selectedTask.id) || selectedTask : null;
@@ -101,7 +137,7 @@ export const GroupKhatmModule: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-extrabold text-[#16241A]">{t('groupKhatmTitle')}</h2>
           </div>
           <p className="text-sm sm:text-base text-[#5D6B5A] mt-1.5 max-w-xl">
-            {t('taskDescPlaceholder')}
+            {t('groupKhatmSubheading')}
           </p>
         </div>
 
@@ -155,7 +191,7 @@ export const GroupKhatmModule: React.FC = () => {
                 </span>
                 <span className="text-xs font-mono font-bold text-stone-500">{task.code}</span>
               </div>
-              <h4 className="text-base font-extrabold text-[#16241A] truncate">{task.title}</h4>
+              <h4 className="text-base font-extrabold text-[#16241A] truncate">{getLocalizedTaskTitle(task)}</h4>
               <p className="text-xs sm:text-sm text-[#5D6B5A] font-medium mt-1.5">{t('targetDateLabel')}: {task.targetDate}</p>
             </button>
           );
@@ -170,20 +206,21 @@ export const GroupKhatmModule: React.FC = () => {
             <div>
               <div className="flex items-center gap-2.5 mb-1.5">
                 <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">
-                  {currentTask.status}
+                  {getLocalizedTaskStatus(currentTask.status)}
                 </span>
                 <span className="text-xs sm:text-sm text-[#5D6B5A]">
-                  Created by <strong className="text-stone-800">{currentTask.creatorName}</strong> on {currentTask.createdAt}
+                  {t('createdByPrefix')} <strong className="text-stone-800">{currentTask.creatorName}</strong> {t('dateOnPrefix')} {currentTask.createdAt}
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#16241A]">{currentTask.title}</h3>
-              <p className="text-sm sm:text-base text-[#5D6B5A] mt-1.5">{currentTask.description}</p>
+              <h3 className="text-xl sm:text-2xl font-black text-[#16241A]">{getLocalizedTaskTitle(currentTask)}</h3>
+              <p className="text-sm sm:text-base text-[#5D6B5A] mt-1.5">{getLocalizedTaskDesc(currentTask)}</p>
             </div>
 
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => copyJoinLink(currentTask)}
                 className="px-4 py-2.5 rounded-2xl bg-stone-100 hover:bg-stone-200 text-[#16241A] text-sm font-bold flex items-center gap-2 transition-colors cursor-pointer"
+                title={t('copiedJoinLink')}
               >
                 <Share2 className="w-4 h-4 text-[#0E8C74]" />
                 <span>{currentTask.code}</span>
@@ -285,7 +322,7 @@ export const GroupKhatmModule: React.FC = () => {
               <div className="p-6 sm:p-8 rounded-3xl bg-stone-50 border border-stone-200 text-center">
                 <span className="text-xs sm:text-sm font-bold text-[#0E8C74] uppercase tracking-wider">{t('targetSurahLabel')}</span>
                 <h4 className="text-2xl sm:text-3xl font-black text-[#16241A] mt-2">
-                  {currentTask.targetSurah}
+                  {getLocalizedTargetSurah(currentTask.targetSurah)}
                 </h4>
                 <p className="text-sm sm:text-base font-bold text-[#5D6B5A] mt-2">
                   {t('repetitionGoalLabel')}: {currentTask.repetitionGoal}
@@ -320,7 +357,7 @@ export const GroupKhatmModule: React.FC = () => {
 
               {/* Claim Repetition Form */}
               <div className="max-w-sm mx-auto p-5 rounded-2xl border border-stone-200 bg-white space-y-3 shadow-xs">
-                <h5 className="text-sm font-extrabold text-[#16241A]">{t('claimBtn')}</h5>
+                <h5 className="text-sm font-extrabold text-[#16241A]">{t('claimCount')}</h5>
                 <div className="flex gap-2.5">
                   <input
                     type="number"
@@ -350,8 +387,8 @@ export const GroupKhatmModule: React.FC = () => {
       {extendingTaskId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full space-y-4 shadow-xl">
-            <h4 className="text-lg font-bold text-[#16241A]">{t('extendDeadline')}</h4>
-            <p className="text-xs sm:text-sm text-[#5D6B5A]">{t('targetDateLabel')}</p>
+            <h4 className="text-lg font-bold text-[#16241A]">{t('extendDeadlineTitle')}</h4>
+            <p className="text-xs sm:text-sm text-[#5D6B5A]">{t('newTargetDateLabel')}</p>
             <input
               type="date"
               value={newExtDate}

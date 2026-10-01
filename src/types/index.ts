@@ -40,6 +40,22 @@ export interface UserProfile {
   isSuspended?: boolean;
 }
 
+export interface FamilyBadge {
+  id: string;
+  title: string;
+  icon: string; // 'star' | 'sun' | 'book' | 'heart' | 'moon' | 'water'
+  description: string;
+  awardedAt: string;
+}
+
+export interface FamilyDua {
+  id: string;
+  text: string;
+  addedBy: string;
+  answered?: boolean;
+  createdAt: string;
+}
+
 export interface FamilyMember {
   id: string;
   parentId: string;
@@ -49,6 +65,11 @@ export interface FamilyMember {
   prayerStreak: number;
   quranProgress: number; // pages read or surahs memorized
   todayPrayers: Record<string, PrayerStatus | null>;
+  hifzSurah?: string;
+  targetQuranPages?: number;
+  barakahStars?: number;
+  badges?: FamilyBadge[];
+  notes?: string;
 }
 
 export interface PrayerTimesData {

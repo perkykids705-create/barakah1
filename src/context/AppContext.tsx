@@ -26,6 +26,8 @@ import {
   CharityGoal,
   GroupKhatmTask,
   FamilyMember,
+  FamilyBadge,
+  FamilyDua,
   TasbihSession,
   DhikrPreset,
   DailyReflection,
@@ -139,8 +141,20 @@ interface AppContextType {
   familyMembers: FamilyMember[];
   activeFamilyMemberId: string | null; // null = parent user
   setActiveFamilyMemberId: (id: string | null) => void;
-  addFamilyMember: (name: string, relationship: 'child' | 'spouse' | 'parent', ageGroup: 'child' | 'teen' | 'adult') => void;
+  addFamilyMember: (name: string, relationship: 'child' | 'spouse' | 'parent', ageGroup: 'child' | 'teen' | 'adult', targetQuranPages?: number, hifzSurah?: string) => void;
+  updateFamilyMember: (id: string, updates: Partial<FamilyMember>) => void;
+  deleteFamilyMember: (id: string) => void;
   logFamilyMemberPrayer: (memberId: string, prayer: PrayerName, status: PrayerStatus) => void;
+  logFamilyQuranProgress: (memberId: string, pagesToAdd: number) => void;
+  awardFamilyStar: (memberId: string, starCount: number, reason: string) => void;
+  familyDuas: FamilyDua[];
+  addFamilyDua: (text: string, addedBy: string) => void;
+  toggleFamilyDuaAnswered: (id: string) => void;
+  deleteFamilyDua: (id: string) => void;
+  familyJamaahPrayers: Record<string, boolean>;
+  toggleFamilyJamaahPrayer: (prayer: PrayerName) => void;
+  familySunnahDone: boolean;
+  toggleFamilySunnahDone: () => void;
 
   // Admin Tools
   adminLogs: AdminAuditLog[];
@@ -635,6 +649,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ageGroup: 'child',
       prayerStreak: 8,
       quranProgress: 45,
+      targetQuranPages: 60,
+      hifzSurah: 'Surah Al-Mulk',
+      barakahStars: 14,
+      badges: [
+        { id: 'b1', title: 'Fajr Champion', icon: 'sun', description: 'Woke up for Fajr with father', awardedAt: '2026-09-28' },
+        { id: 'b2', title: 'Wudu Master', icon: 'water', description: 'Learned Sunnah steps of Wudu', awardedAt: '2026-09-25' },
+      ],
       todayPrayers: { Fajr: 'on-time', Dhuhr: 'on-time', Asr: 'on-time', Maghrib: null, Isha: null },
     },
     {
@@ -645,10 +666,70 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ageGroup: 'teen',
       prayerStreak: 15,
       quranProgress: 120,
+      targetQuranPages: 150,
+      hifzSurah: 'Surah Ar-Rahman',
+      barakahStars: 22,
+      badges: [
+        { id: 'b3', title: 'Qur\'an Hafizah Journey', icon: 'book', description: 'Completed Juz 29 revision', awardedAt: '2026-09-27' },
+        { id: 'b4', title: 'Kindness Star', icon: 'heart', description: 'Helped prepare evening dinner and Iftar', awardedAt: '2026-09-26' },
+      ],
       todayPrayers: { Fajr: 'on-time', Dhuhr: 'on-time', Asr: 'late', Maghrib: null, Isha: null },
-    }
+    },
+    {
+      id: 'fam_3',
+      parentId: 'usr_default_01',
+      name: 'Amina (Spouse)',
+      relationship: 'spouse',
+      ageGroup: 'adult',
+      prayerStreak: 30,
+      quranProgress: 340,
+      targetQuranPages: 604,
+      hifzSurah: 'Surah Al-Baqarah',
+      barakahStars: 45,
+      badges: [
+        { id: 'b5', title: 'Home Pillar', icon: 'star', description: 'Led family daily Hadith reading', awardedAt: '2026-09-29' },
+      ],
+      todayPrayers: { Fajr: 'on-time', Dhuhr: 'on-time', Asr: 'on-time', Maghrib: null, Isha: null },
+    },
   ]);
   const [activeFamilyMemberId, setActiveFamilyMemberId] = useState<string | null>(null);
+
+  // Household Jama'ah Prayers at home today
+  const [familyJamaahPrayers, setFamilyJamaahPrayers] = useState<Record<string, boolean>>({
+    Fajr: false,
+    Dhuhr: false,
+    Asr: true,
+    Maghrib: true,
+    Isha: false,
+  });
+
+  // Daily Household Sunnah Challenge
+  const [familySunnahDone, setFamilySunnahDone] = useState<boolean>(true);
+
+  // Household Du'as List
+  const [familyDuas, setFamilyDuas] = useState<FamilyDua[]>([
+    {
+      id: 'dua_1',
+      text: 'For grandmother Khadija\'s swift recovery, comfort, and full health.',
+      addedBy: 'Yusuf',
+      answered: false,
+      createdAt: '2026-09-26',
+    },
+    {
+      id: 'dua_2',
+      text: 'Rabbana hab lana min azwajina wa dhurriyyatina qurrata a\'yun waj\'alna lil-muttaqina imama.',
+      addedBy: 'Tariq',
+      answered: false,
+      createdAt: '2026-09-20',
+    },
+    {
+      id: 'dua_3',
+      text: 'For Maryam\'s ease, wisdom, and excellence in her Islamic studies and exams.',
+      addedBy: 'Amina',
+      answered: true,
+      createdAt: '2026-09-15',
+    },
+  ]);
 
   // Admin Audit Log
   const [adminLogs, setAdminLogs] = useState<AdminAuditLog[]>([
@@ -1282,7 +1363,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Family Mode
-  const addFamilyMember = (name: string, relationship: 'child' | 'spouse' | 'parent', ageGroup: 'child' | 'teen' | 'adult') => {
+  const addFamilyMember = (
+    name: string,
+    relationship: 'child' | 'spouse' | 'parent',
+    ageGroup: 'child' | 'teen' | 'adult',
+    targetQuranPages: number = 30,
+    hifzSurah: string = 'Juz Amma'
+  ) => {
     if (!currentUser) return;
     const newMember: FamilyMember = {
       id: `fam_${Date.now()}`,
@@ -1292,10 +1379,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ageGroup,
       prayerStreak: 1,
       quranProgress: 0,
+      targetQuranPages: targetQuranPages || 30,
+      hifzSurah: hifzSurah || 'Juz Amma',
+      barakahStars: 5,
+      badges: [
+        {
+          id: `b_${Date.now()}`,
+          title: 'Welcome to Family Barakah',
+          icon: 'star',
+          description: 'Joined household worship circle',
+          awardedAt: new Date().toISOString().split('T')[0],
+        },
+      ],
       todayPrayers: {},
     };
     setFamilyMembers((prev) => [...prev, newMember]);
     showNotification(`Family profile for ${name} created.`);
+  };
+
+  const updateFamilyMember = (id: string, updates: Partial<FamilyMember>) => {
+    setFamilyMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
+    );
+    showNotification('Family profile updated successfully.');
+  };
+
+  const deleteFamilyMember = (id: string) => {
+    setFamilyMembers((prev) => prev.filter((m) => m.id !== id));
+    if (activeFamilyMemberId === id) {
+      setActiveFamilyMemberId(null);
+    }
+    showNotification('Family profile removed.');
   };
 
   const logFamilyMemberPrayer = (memberId: string, prayer: PrayerName, status: PrayerStatus) => {
@@ -1311,6 +1425,81 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       )
     );
     showNotification(`Logged ${prayer} for family member.`);
+  };
+
+  const logFamilyQuranProgress = (memberId: string, pagesToAdd: number) => {
+    setFamilyMembers((prev) =>
+      prev.map((m) => {
+        if (m.id !== memberId) return m;
+        const newProgress = Math.max(0, (m.quranProgress || 0) + pagesToAdd);
+        const starsToAdd = Math.floor(pagesToAdd / 2);
+        return {
+          ...m,
+          quranProgress: newProgress,
+          barakahStars: (m.barakahStars || 0) + Math.max(1, starsToAdd),
+        };
+      })
+    );
+    showNotification(`Logged +${pagesToAdd} Qur'an pages! Barakah added.`);
+  };
+
+  const awardFamilyStar = (memberId: string, starCount: number, reason: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    setFamilyMembers((prev) =>
+      prev.map((m) => {
+        if (m.id !== memberId) return m;
+        const newBadge: FamilyBadge = {
+          id: `badge_${Date.now()}`,
+          title: starCount >= 5 ? 'Major Good Deed' : 'Barakah Star Award',
+          icon: 'star',
+          description: reason || 'Earned stars for righteous deeds and good character',
+          awardedAt: today,
+        };
+        return {
+          ...m,
+          barakahStars: (m.barakahStars || 0) + starCount,
+          badges: [newBadge, ...(m.badges || [])],
+        };
+      })
+    );
+    showNotification(`Awarded +${starCount} Barakah Stars!`);
+  };
+
+  const addFamilyDua = (text: string, addedBy: string) => {
+    if (!text.trim()) return;
+    const newDua: FamilyDua = {
+      id: `dua_${Date.now()}`,
+      text: text.trim(),
+      addedBy: addedBy || currentUser?.name || 'Family',
+      answered: false,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setFamilyDuas((prev) => [newDua, ...prev]);
+    showNotification('New household supplication added to family prayer board.');
+  };
+
+  const toggleFamilyDuaAnswered = (id: string) => {
+    setFamilyDuas((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, answered: !d.answered } : d))
+    );
+  };
+
+  const deleteFamilyDua = (id: string) => {
+    setFamilyDuas((prev) => prev.filter((d) => d.id !== id));
+    showNotification('Du\'a removed from list.');
+  };
+
+  const toggleFamilyJamaahPrayer = (prayer: PrayerName) => {
+    setFamilyJamaahPrayers((prev) => {
+      const updated = { ...prev, [prayer]: !prev[prayer] };
+      return updated;
+    });
+    showNotification(`Updated congregational (Jama'ah) status for ${prayer}.`);
+  };
+
+  const toggleFamilySunnahDone = () => {
+    setFamilySunnahDone((prev) => !prev);
+    showNotification(familySunnahDone ? 'Sunnah challenge unchecked' : 'Sunnah challenge completed by household! Alhamdulillah 🌟');
   };
 
   // Admin Actions
@@ -1457,7 +1646,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         activeFamilyMemberId,
         setActiveFamilyMemberId,
         addFamilyMember,
+        updateFamilyMember,
+        deleteFamilyMember,
         logFamilyMemberPrayer,
+        logFamilyQuranProgress,
+        awardFamilyStar,
+        familyDuas,
+        addFamilyDua,
+        toggleFamilyDuaAnswered,
+        deleteFamilyDua,
+        familyJamaahPrayers,
+        toggleFamilyJamaahPrayer,
+        familySunnahDone,
+        toggleFamilySunnahDone,
         adminLogs,
         logAdminAction,
         toggleUserSuspension,

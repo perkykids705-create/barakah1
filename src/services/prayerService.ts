@@ -1,4 +1,4 @@
-import { PrayerName, PrayerTimesData, LocationConfig } from '../types';
+import { PrayerName, PrayerTimesData, LocationConfig, Language } from '../types';
 import {
   COUNTRIES_DATABASE,
   ALL_LOCATIONS,
@@ -87,6 +87,84 @@ export const getEstimatedHijriDate = (date: Date = new Date()) => {
     hijriDate: `${hijriDay} ${monthName} ${hijriYear} AH`,
     gregorian: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
   };
+};
+
+/**
+ * Format Hijri Date localized for all supported languages
+ */
+export const formatLocalizedHijriDate = (
+  dateObj?: {
+    hijriDate?: string;
+    hijriMonthName?: string;
+    hijriYear?: string;
+    hijriDay?: number;
+  },
+  lang: Language = 'en'
+): string => {
+  if (!dateObj || !dateObj.hijriDate) return '';
+
+  const raw = dateObj.hijriDate;
+  // Match day and year
+  const dayMatch = raw.match(/^\s*(\d{1,2})/);
+  const yearMatch = raw.match(/(\d{4})/);
+  const day = dayMatch ? dayMatch[1] : (dateObj.hijriDay ? String(dateObj.hijriDay) : '1');
+  const year = yearMatch ? yearMatch[1] : (dateObj.hijriYear ? dateObj.hijriYear.replace(/\D/g, '') : '1448');
+
+  // Month index detection
+  const lower = (dateObj.hijriMonthName || raw).toLowerCase();
+  let monthIndex = 0; // 0-based
+  if (lower.includes('muharram')) monthIndex = 0;
+  else if (lower.includes('safar')) monthIndex = 1;
+  else if (lower.includes('awwal') && (lower.includes('rabi') || lower.includes('rabee'))) monthIndex = 2;
+  else if ((lower.includes('thani') || lower.includes('akhir')) && (lower.includes('rabi') || lower.includes('rabee'))) monthIndex = 3;
+  else if (lower.includes('awwal') || lower.includes('ula')) monthIndex = 4;
+  else if (lower.includes('thani') || lower.includes('akhir')) monthIndex = 5;
+  else if (lower.includes('rajab')) monthIndex = 6;
+  else if (lower.includes('sha') && lower.includes('ban')) monthIndex = 7;
+  else if (lower.includes('ramadan') || lower.includes('ramadhan')) monthIndex = 8;
+  else if (lower.includes('shawwal')) monthIndex = 9;
+  else if (lower.includes('qi') || lower.includes('qad') || lower.includes('qa')) monthIndex = 10;
+  else if (lower.includes('hijjah') || lower.includes('hajj')) monthIndex = 11;
+
+  const months: Record<Language, string[]> = {
+    en: [
+      'Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani", 'Jumada al-Awwal', 'Jumada al-Thani',
+      'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', "Dhu al-Qi'dah", 'Dhu al-Hijjah'
+    ],
+    ar: [
+      'مُحَرَّم', 'صَفَر', 'رَبِيع الأوَّل', 'رَبِيع الآخِر', 'جُمَادَى الأُولَى', 'جُمَادَى الآخِرَة',
+      'رَجَب', 'شَعْبَان', 'رَمَضَان', 'شَوَّال', 'ذُو القَعْدَة', 'ذُو الحِجَّة'
+    ],
+    ur: [
+      'محرم', 'صفر', 'ربیع الاول', 'ربیع الثانی', 'جمادی الاول', 'جمادی الثانی',
+      'رجب', 'شعبان', 'رمضان', 'شوال', 'ذوالقعدہ', 'ذوالحجہ'
+    ],
+    hi: [
+      'मुहर्रम', 'सफ़र', 'रबीउल अव्वल', 'रबीउस सानी', 'जमादिउल अव्वल', 'जमादिउस सानी',
+      'रजब', 'शाबान', 'रमज़ान', 'शव्वाल', 'ज़ुल क़ादा', 'ज़ुल हिज्जा'
+    ],
+    bn: [
+      'মহররম', 'সফর', 'রবিউল আউয়াল', 'রবিউস সানি', 'জমাদিউল আউয়াল', 'জমাদিউস সানি',
+      'রজব', 'শাবান', 'রমজান', 'শাওয়াল', 'জিলকদ', 'জিলহজ'
+    ],
+  };
+
+  const localizedMonth = months[lang]?.[monthIndex] || months.en[monthIndex];
+
+  if (lang === 'ar') {
+    return `${day} ${localizedMonth} ${year} هـ`;
+  }
+  if (lang === 'ur') {
+    return `${day} ${localizedMonth} ${year} ھ`;
+  }
+  if (lang === 'hi') {
+    return `${day} ${localizedMonth} ${year} हिजरी`;
+  }
+  if (lang === 'bn') {
+    return `${day} ${localizedMonth} ${year} হিজরি`;
+  }
+
+  return `${day} ${localizedMonth} ${year} AH`;
 };
 
 /**

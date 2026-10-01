@@ -4,6 +4,7 @@ import { useTranslation, isRTL, getFontFamilyClass } from '../../i18n/translatio
 import { BrandMark } from '../common/BrandMark';
 import { LanguageDropdown } from '../common/LanguageDropdown';
 import { Language } from '../../types';
+import { formatLocalizedHijriDate } from '../../services/prayerService';
 import {
   Home,
   Clock,
@@ -296,7 +297,9 @@ export const AppShell: React.FC<AppShellProps> = ({
               </h1>
               {prayerTimes && (
                 <p className="text-xs text-[#5D6B5A] flex items-center gap-1.5 font-medium">
-                  <span className="font-bold text-[#0B2E1C]">{prayerTimes.date.hijriDate}</span>
+                  <span className="font-bold text-[#0B2E1C]" dir={rtl ? 'rtl' : 'ltr'}>
+                    {formatLocalizedHijriDate(prayerTimes.date, language)}
+                  </span>
                   <span className="text-stone-300">·</span>
                   <span>{currentUser?.location.city}, {currentUser?.location.country}</span>
                 </p>
