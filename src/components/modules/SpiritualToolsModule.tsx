@@ -54,6 +54,8 @@ export const SpiritualToolsModule: React.FC = () => {
   // Journal state
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedJournalDate, setSelectedJournalDate] = useState<string>(todayStr);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+  const [customDhikrToDelete, setCustomDhikrToDelete] = useState<{ key: string; name: string } | null>(null);
 
   const activeReflection = dailyReflections[selectedJournalDate] || {
     date: selectedJournalDate,
@@ -81,6 +83,54 @@ export const SpiritualToolsModule: React.FC = () => {
   }, [selectedJournalDate, dailyReflections]);
 
   const currentDhikr = dhikrPresets.find((d) => d.key === currentDhikrKey) || dhikrPresets[0];
+
+  // Category counts
+  const categoryCounts = {
+    all: dhikrPresets.length,
+    core: dhikrPresets.filter((d) => d.category === 'core').length,
+    durood: dhikrPresets.filter((d) => d.category === 'durood').length,
+    quranic: dhikrPresets.filter((d) => d.category === 'quranic').length,
+    custom: dhikrPresets.filter((d) => d.isCustom || d.category === 'custom').length,
+  };
+
+  // Filtered dhikr presets for the active category
+  const filteredDhikrPresets = dhikrPresets.filter((d) => {
+    if (dhikrCategoryFilter === 'all') return true;
+    if (dhikrCategoryFilter === 'custom') return d.isCustom || d.category === 'custom';
+    return d.category === dhikrCategoryFilter;
+  });
+
+  // Handle switching category tab: immediately load the first dhikr of the category if current isn't in it
+  const handleCategoryFilterChange = (catId: 'all' | 'core' | 'durood' | 'quranic' | 'custom') => {
+    setDhikrCategoryFilter(catId);
+    const matching = dhikrPresets.filter((d) => {
+      if (catId === 'all') return true;
+      if (catId === 'custom') return d.isCustom || d.category === 'custom';
+      return d.category === catId;
+    });
+
+    if (matching.length > 0) {
+      const isCurrentInCat = matching.some((d) => d.key === currentDhikrKey);
+      if (!isCurrentInCat) {
+        setCurrentDhikrKey(matching[0].key);
+        resetTasbih();
+      }
+    }
+  };
+
+  // Guard to ensure currentDhikrKey is always valid within active category filter
+  React.useEffect(() => {
+    if (dhikrCategoryFilter !== 'all') {
+      const matching = dhikrPresets.filter((d) => {
+        if (dhikrCategoryFilter === 'custom') return d.isCustom || d.category === 'custom';
+        return d.category === dhikrCategoryFilter;
+      });
+      if (matching.length > 0 && !matching.some((d) => d.key === currentDhikrKey)) {
+        setCurrentDhikrKey(matching[0].key);
+        resetTasbih();
+      }
+    }
+  }, [dhikrCategoryFilter, dhikrPresets, currentDhikrKey, setCurrentDhikrKey, resetTasbih]);
 
   const handleSaveJournal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,17 +222,17 @@ export const SpiritualToolsModule: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-bold scrollbar-none">
                 {[
-                  { id: 'all' as const, label: `All (${dhikrPresets.length})` },
-                  { id: 'core' as const, label: 'Core' },
-                  { id: 'durood' as const, label: 'Durood' },
-                  { id: 'quranic' as const, label: 'Qur\'an' },
-                  { id: 'custom' as const, label: 'My Du\'as' },
+                  { id: 'all' as const, label: `All (${categoryCounts.all})` },
+                  { id: 'core' as const, label: `Core (${categoryCounts.core})` },
+                  { id: 'durood' as const, label: `Durood (${categoryCounts.durood})` },
+                  { id: 'quranic' as const, label: `Qur'an (${categoryCounts.quranic})` },
+                  { id: 'custom' as const, label: `My Du'as (${categoryCounts.custom})` },
                 ].map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => setDhikrCategoryFilter(cat.id)}
-                    className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                    onClick={() => handleCategoryFilterChange(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 font-extrabold ${
                       dhikrCategoryFilter === cat.id
                         ? 'bg-[#0E8C74] text-white shadow-2xs'
                         : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
@@ -225,17 +275,15 @@ export const SpiritualToolsModule: React.FC = () => {
                   }}
                   className="w-full bg-white px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm font-bold text-stone-800 outline-none focus:border-[#0E8C74] cursor-pointer"
                 >
-                  {dhikrPresets
-                    .filter((d) => {
-                      if (dhikrCategoryFilter === 'all') return true;
-                      if (dhikrCategoryFilter === 'custom') return d.isCustom || d.category === 'custom';
-                      return d.category === dhikrCategoryFilter;
-                    })
-                    .map((d) => (
+                  {filteredDhikrPresets.length === 0 ? (
+                    <option value="" disabled>No du'as in this category yet</option>
+                  ) : (
+                    filteredDhikrPresets.map((d) => (
                       <option key={d.key} value={d.key}>
-                        {d.transliteration} ({d.defaultTarget}x) {d.isCustom ? '★ (Custom)' : ''}
+                        {d.name ? `${d.name} (${d.defaultTarget}x)` : `${d.transliteration} (${d.defaultTarget}x)`} {d.isCustom ? '★ (Custom)' : ''}
                       </option>
-                    ))}
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -243,9 +291,10 @@ export const SpiritualToolsModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(`Remove custom dhikr "${currentDhikr.transliteration}"?`)) {
-                      deleteCustomDhikr(currentDhikr.key);
-                    }
+                    setCustomDhikrToDelete({
+                      key: currentDhikr.key,
+                      name: currentDhikr.transliteration,
+                    });
                   }}
                   className="p-2.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all cursor-pointer shrink-0"
                   title="Delete this custom dhikr"
@@ -287,7 +336,14 @@ export const SpiritualToolsModule: React.FC = () => {
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-arabic text-[#0B2E1C] leading-relaxed font-bold dir-rtl">
                 {currentDhikr.arabic}
               </h3>
-              <p className="text-base sm:text-lg font-bold text-[#16241A]">{currentDhikr.transliteration}</p>
+              {currentDhikr.name && (
+                <p className="text-xs sm:text-sm font-extrabold text-[#0E8C74] uppercase tracking-wider">
+                  {currentDhikr.name}
+                </p>
+              )}
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-[#16241A] max-w-xl mx-auto leading-relaxed">
+                {currentDhikr.transliteration}
+              </p>
               <p className="text-xs sm:text-sm text-stone-600 font-medium max-w-lg mx-auto italic">
                 "{currentDhikr.translation}"
               </p>
@@ -351,79 +407,112 @@ export const SpiritualToolsModule: React.FC = () => {
             </div>
           </div>
 
-          {/* ALL ADHKAR & DU'AS LIBRARY DIRECTORY */}
+          {/* ADHKAR & DU'AS LIBRARY DIRECTORY */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <div>
-                <h4 className="text-base sm:text-lg font-black text-[#16241A]">Adhkar & Du'as Library</h4>
+                <h4 className="text-base sm:text-lg font-black text-[#16241A]">
+                  {dhikrCategoryFilter === 'all'
+                    ? 'All Adhkar & Du\'as Library'
+                    : dhikrCategoryFilter === 'quranic'
+                    ? 'Qur\'anic Du\'as Library'
+                    : dhikrCategoryFilter === 'durood'
+                    ? 'Durood & Salawat Library'
+                    : dhikrCategoryFilter === 'core'
+                    ? 'Core Tasbih & Adhkar Library'
+                    : 'My Custom Du\'as Library'}
+                </h4>
                 <p className="text-xs text-stone-500 font-medium">Click any dhikr below to load it into your digital counter</p>
               </div>
               <span className="text-xs font-black text-[#0E8C74] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                {dhikrPresets.length} Total
+                {filteredDhikrPresets.length} {dhikrCategoryFilter === 'all' ? 'Total' : 'Found'}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-              {dhikrPresets.map((d) => {
-                const isSelected = d.key === currentDhikrKey;
-
-                return (
-                  <div
-                    key={d.key}
-                    onClick={() => {
-                      setCurrentDhikrKey(d.key);
-                      resetTasbih();
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      isSelected
-                        ? 'bg-emerald-50/60 border-[#0E8C74] ring-2 ring-[#0E8C74]/20 shadow-2xs'
-                        : 'bg-stone-50 hover:bg-stone-100/70 border-stone-200'
-                    }`}
+            {filteredDhikrPresets.length === 0 ? (
+              <div className="text-center py-10 px-4 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-3">
+                <p className="text-sm font-bold text-stone-700">No du'as found in this category yet</p>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDhikrModal(true)}
+                    className="px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-extrabold cursor-pointer"
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xxs font-extrabold uppercase px-2 py-0.5 rounded-md bg-stone-200/80 text-stone-700">
-                          {d.category || (d.isCustom ? 'Custom' : 'Dhikr')}
-                        </span>
-                        <span className="text-xxs font-bold text-stone-500">
-                          {d.defaultTarget}x target
-                        </span>
+                    + Add Your Own Du'a
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryFilterChange('all')}
+                    className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold cursor-pointer"
+                  >
+                    View All Adhkar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                {filteredDhikrPresets.map((d) => {
+                  const isSelected = d.key === currentDhikrKey;
+
+                  return (
+                    <div
+                      key={d.key}
+                      onClick={() => {
+                        setCurrentDhikrKey(d.key);
+                        resetTasbih();
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-emerald-50/60 border-[#0E8C74] ring-2 ring-[#0E8C74]/20 shadow-2xs'
+                          : 'bg-stone-50 hover:bg-stone-100/70 border-stone-200'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xxs font-extrabold uppercase px-2 py-0.5 rounded-md bg-stone-200/80 text-stone-700">
+                            {d.category || (d.isCustom ? 'Custom' : 'Dhikr')}
+                          </span>
+                          <span className="text-xxs font-bold text-stone-500">
+                            {d.defaultTarget}x target
+                          </span>
+                        </div>
+                        <p className="text-xs font-extrabold text-[#16241A] line-clamp-1">{d.transliteration}</p>
+                        <p className="text-sm font-arabic text-[#0B2E1C] line-clamp-1">{d.arabic}</p>
+                        <p className="text-xxs text-stone-500 line-clamp-1 italic">"{d.translation}"</p>
+                        {d.reference && (
+                          <p className="text-xxs text-amber-800 font-bold line-clamp-1 mt-0.5">
+                            ★ {d.reference}
+                          </p>
+                        )}
                       </div>
-                      <p className="text-xs font-extrabold text-[#16241A] line-clamp-1">{d.transliteration}</p>
-                      <p className="text-sm font-arabic text-[#0B2E1C] line-clamp-1">{d.arabic}</p>
-                      <p className="text-xxs text-stone-500 line-clamp-1 italic">"{d.translation}"</p>
-                      {d.reference && (
-                        <p className="text-xxs text-amber-800 font-bold line-clamp-1 mt-0.5">
-                          ★ {d.reference}
-                        </p>
-                      )}
-                    </div>
 
-                    <div className="pt-2 flex items-center justify-between border-t border-stone-200/60 mt-2">
-                      <span className={`text-xxs font-black ${isSelected ? 'text-[#0E8C74]' : 'text-stone-400'}`}>
-                        {isSelected ? '● Active in Counter' : 'Tap to Count'}
-                      </span>
+                      <div className="pt-2 flex items-center justify-between border-t border-stone-200/60 mt-2">
+                        <span className={`text-xxs font-black ${isSelected ? 'text-[#0E8C74]' : 'text-stone-400'}`}>
+                          {isSelected ? '● Active in Counter' : 'Tap to Count'}
+                        </span>
 
-                      {d.isCustom && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Remove custom dhikr "${d.transliteration}"?`)) {
-                              deleteCustomDhikr(d.key);
-                            }
-                          }}
-                          className="text-stone-400 hover:text-red-500 p-1"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                        {d.isCustom && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCustomDhikrToDelete({
+                                key: d.key,
+                                name: d.transliteration,
+                              });
+                            }}
+                            className="text-stone-400 hover:text-red-500 p-1 cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* MODAL: ADD CUSTOM DU'A / ADHKAR */}
@@ -685,7 +774,7 @@ export const SpiritualToolsModule: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <label className="text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>{t('niyyahHeading')} (Morning Intention)</span>
+                    <span>{t('niyyahHeading')}</span>
                   </label>
                   <span className="text-xxs font-bold text-stone-400">Pure purpose for Allah</span>
                 </div>
@@ -703,7 +792,7 @@ export const SpiritualToolsModule: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <label className="text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider flex items-center gap-2">
                     <Heart className="w-4 h-4 text-rose-500" />
-                    <span>{t('gratitudeHeading')} (Shukr)</span>
+                    <span>{t('gratitudeHeading')}</span>
                   </label>
                   <span className="text-xxs font-bold text-stone-400">Blessings you cherish today</span>
                 </div>
@@ -721,7 +810,7 @@ export const SpiritualToolsModule: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <label className="text-xs sm:text-sm font-black text-stone-700 uppercase tracking-wider flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-emerald-600" />
-                    <span>{t('reflectionHeading')} (Tadabbur & Muhasabah)</span>
+                    <span>{t('reflectionHeading')}</span>
                   </label>
                   <span className="text-xxs font-bold text-stone-400">Ayah, lesson, or evening introspection</span>
                 </div>
@@ -859,13 +948,10 @@ export const SpiritualToolsModule: React.FC = () => {
 
                           <button
                             type="button"
-                            onClick={() => {
-                              if (confirm(`Delete reflection for ${entry.date}?`)) {
-                                deleteDailyReflection(entry.date);
-                              }
-                            }}
+                            onClick={() => setEntryToDelete(entry.date)}
                             className="p-1.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                             title="Delete entry"
+                            aria-label={`Delete entry for ${entry.date}`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -934,6 +1020,96 @@ export const SpiritualToolsModule: React.FC = () => {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION MODAL: DELETE JOURNAL / GRATITUDE ENTRY */}
+      {entryToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
+                <Trash2 className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div>
+                <h4 className="text-lg font-black text-stone-900">Delete Reflection?</h4>
+                <p className="text-xs text-stone-500 font-medium">This entry will be permanently removed</p>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed bg-stone-50 p-3.5 rounded-2xl border border-stone-200">
+              Are you sure you want to delete your gratitude, niyyah, and reflection entry for{' '}
+              <strong className="text-stone-900">{formatDateLabel(entryToDelete)} ({entryToDelete})</strong>?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setEntryToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs uppercase hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteDailyReflection(entryToDelete);
+                  if (selectedJournalDate === entryToDelete) {
+                    setNiyyahInput('');
+                    setGratitudeInput('');
+                    setReflectionInput('');
+                  }
+                  setEntryToDelete(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs uppercase tracking-wider shadow-sm cursor-pointer flex items-center gap-1.5 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Entry</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION MODAL: DELETE CUSTOM DHIKR */}
+      {customDhikrToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
+                <Trash2 className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div>
+                <h4 className="text-lg font-black text-stone-900">Remove Custom Du'a?</h4>
+                <p className="text-xs text-stone-500 font-medium">This supplication will be removed from your list</p>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-600 font-medium leading-relaxed bg-stone-50 p-3.5 rounded-2xl border border-stone-200">
+              Are you sure you want to remove <strong className="text-stone-900">"{customDhikrToDelete.name}"</strong>?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setCustomDhikrToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs uppercase hover:bg-stone-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCustomDhikr(customDhikrToDelete.key);
+                  setCustomDhikrToDelete(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs uppercase tracking-wider shadow-sm cursor-pointer flex items-center gap-1.5 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Remove Du'a</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

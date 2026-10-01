@@ -171,9 +171,9 @@ export const TRANSLATIONS_EXTENDED: Record<Language, Record<string, string>> = {
     // Spiritual Tools Module
     niyyahHeading: 'Niyyah (Morning Intention)',
     niyyahPlaceholder: 'Set a conscious intention for the day for the sake of Allah...',
-    gratitudeHeading: 'Gratitude (What are you thankful for today?)',
+    gratitudeHeading: 'Shukr (Gratitude)',
     gratitudeToolsPlaceholder: 'Alhamdulillah for health, guidance, peace...',
-    reflectionHeading: 'Spiritual Reflection & Lessons',
+    reflectionHeading: 'Tadabbur (Reflection)',
     reflectionToolsPlaceholder: 'Reflect on a verse, trial, or lesson from today...',
     saveReflectionBtn: 'Save Daily Reflection',
     qiblaHeading: 'Accurate Qibla Compass',

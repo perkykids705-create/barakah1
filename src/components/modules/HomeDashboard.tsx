@@ -484,7 +484,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             <p className="text-2xl sm:text-3xl font-extrabold font-arabic text-[#0B2E1C] my-3 leading-relaxed">
               {currentDhikr.arabic}
             </p>
-            <p className="text-sm sm:text-base font-bold text-[#16241A] mb-1">
+            {currentDhikr.name && (
+              <p className="text-xs font-extrabold text-[#0E8C74] uppercase tracking-wider mb-1">
+                {currentDhikr.name}
+              </p>
+            )}
+            <p className="text-sm sm:text-base font-bold text-[#16241A] mb-1 leading-relaxed">
               {currentDhikr.transliteration}
             </p>
             {currentDhikr.translation && (

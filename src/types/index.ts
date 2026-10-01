@@ -329,6 +329,7 @@ export interface KhatmAssignment {
 
 export interface DhikrPreset {
   key: string;
+  name?: string;
   arabic: string;
   transliteration: string;
   translation: string;
