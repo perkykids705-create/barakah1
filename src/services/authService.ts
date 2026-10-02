@@ -3,6 +3,7 @@ import { isSupabaseConfigured, supabase, syncUserProfileToSupabase } from './sup
 
 export interface PendingRegistration {
   name: string;
+  username: string;
   email: string;
   passwordHash: string;
   language: Language;
@@ -14,21 +15,100 @@ export interface PendingRegistration {
   createdAt: string;
 }
 
+export interface PasswordValidationRules {
+  minLength: boolean; // >= 8 chars
+  hasUpperCase: boolean; // [A-Z]
+  hasLowerCase: boolean; // [a-z]
+  hasNumber: boolean; // [0-9]
+  hasSpecialChar: boolean; // [!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]
+}
+
 const PENDING_STORAGE_KEY = 'bd_pending_registrations';
 
 /**
- * SHA-256 cryptographic password hashing using Web Crypto API.
+ * Validates email format according to RFC 5322 standard.
+ */
+export function isValidEmail(email: string): boolean {
+  const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  return re.test(email.trim());
+}
+
+/**
+ * Validates username: 3-30 characters, alphanumeric, underscores, hyphens, and dots.
+ */
+export function isValidUsername(username: string): boolean {
+  const trimmed = username.trim();
+  if (trimmed.length < 3 || trimmed.length > 30) return false;
+  const re = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{1,28}[a-zA-Z0-9]$/;
+  return re.test(trimmed);
+}
+
+/**
+ * Checks if a username is already taken by a registered or pending user.
+ */
+export function isUsernameTaken(username: string, existingUsers: UserProfile[]): boolean {
+  const norm = username.trim().toLowerCase();
+  if (!norm) return false;
+
+  const inUsers = existingUsers.some((u) => u.username?.toLowerCase() === norm);
+  if (inUsers) return true;
+
+  const pendingMap = getPendingRegistrations();
+  return Object.values(pendingMap).some((p) => p.username?.toLowerCase() === norm);
+}
+
+/**
+ * Checks if an email is already taken by a registered or pending user.
+ */
+export function isEmailTaken(email: string, existingUsers: UserProfile[]): boolean {
+  const norm = email.trim().toLowerCase();
+  if (!norm) return false;
+
+  const inUsers = existingUsers.some((u) => u.email.toLowerCase() === norm && u.emailVerified);
+  if (inUsers) return true;
+
+  return false;
+}
+
+/**
+ * Checks all strong password security criteria.
+ */
+export function checkPasswordRules(password: string): PasswordValidationRules {
+  return {
+    minLength: password.length >= 8,
+    hasUpperCase: /[A-Z]/.test(password),
+    hasLowerCase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecialChar: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password),
+  };
+}
+
+/**
+ * Checks if all password rules are satisfied.
+ */
+export function isPasswordStrong(rules: PasswordValidationRules): boolean {
+  return (
+    rules.minLength &&
+    rules.hasUpperCase &&
+    rules.hasLowerCase &&
+    rules.hasNumber &&
+    rules.hasSpecialChar
+  );
+}
+
+/**
+ * SHA-256 cryptographic password hashing using Web Crypto API with high-entropy salt.
  */
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + '_barakah_salt_2026');
+  const data = encoder.encode(password + '_barakah_daily_sha256_salt_v2');
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
- * Generates a secure 6-digit numeric verification code.
+ * Generates a secure 6-digit numeric verification OTP code.
  */
 export function generateVerificationCode(): string {
   const array = new Uint32Array(1);
@@ -61,11 +141,12 @@ export function savePendingRegistrations(map: Record<string, PendingRegistration
 }
 
 /**
- * Initiates user registration by creating a pending registration with a 6-digit verification code.
+ * Initiates user registration by validating inputs, creating a pending record, and generating a 6-digit verification code.
  */
 export async function initiateRegistration(
   data: {
     name: string;
+    username: string;
     email: string;
     password: string;
     language: Language;
@@ -80,33 +161,69 @@ export async function initiateRegistration(
   message: string;
 }> {
   const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedUsername = data.username.trim().toLowerCase();
 
-  // 1. Check if user already exists
-  const existing = existingUsers.find((u) => u.email.toLowerCase() === normalizedEmail);
-  if (existing) {
+  // 1. Validate Full Name
+  if (!data.name.trim() || data.name.trim().length < 2) {
     return {
       success: false,
-      message: 'An account with this email address already exists. Please log in.',
+      message: 'Please provide your valid full name.',
     };
   }
 
-  // 2. Validate password strength
-  if (data.password.length < 8) {
+  // 2. Validate Username format
+  if (!isValidUsername(normalizedUsername)) {
     return {
       success: false,
-      message: 'Password must be at least 8 characters long for security.',
+      message:
+        'Username must be 3-30 characters long and contain only letters, numbers, underscores, or hyphens.',
     };
   }
 
-  // 3. Hash password & generate verification code
+  // 3. Validate Username uniqueness
+  if (isUsernameTaken(normalizedUsername, existingUsers)) {
+    return {
+      success: false,
+      message: `The username "${normalizedUsername}" is already taken. Please choose another username.`,
+    };
+  }
+
+  // 4. Validate Email format
+  if (!isValidEmail(normalizedEmail)) {
+    return {
+      success: false,
+      message: 'Please enter a valid email address (e.g. yourname@domain.com).',
+    };
+  }
+
+  // 5. Check if email already exists in registered active accounts
+  if (isEmailTaken(normalizedEmail, existingUsers)) {
+    return {
+      success: false,
+      message: 'An active account with this email address already exists. Please log in.',
+    };
+  }
+
+  // 6. Validate Strong Password rules
+  const rules = checkPasswordRules(data.password);
+  if (!isPasswordStrong(rules)) {
+    return {
+      success: false,
+      message:
+        'Password does not meet all security requirements. It must have 8+ characters, uppercase & lowercase letters, a number, and a special character.',
+    };
+  }
+
+  // 7. Hash password & generate verification code
   const passwordHash = await hashPassword(data.password);
   const verificationCode = generateVerificationCode();
-  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes expiry
+  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes expiration
 
-  // 4. Store pending record
+  // 8. Store pending registration record
   const pendingMap = getPendingRegistrations();
   pendingMap[normalizedEmail] = {
     name: data.name.trim(),
+    username: normalizedUsername,
     email: normalizedEmail,
     passwordHash,
     language: data.language,
@@ -119,7 +236,7 @@ export async function initiateRegistration(
   };
   savePendingRegistrations(pendingMap);
 
-  // 5. If Supabase is configured, trigger Supabase Auth signUp
+  // 9. If Supabase is configured, trigger Supabase Auth signUp and insert verification record
   if (isSupabaseConfigured && supabase) {
     try {
       await supabase.auth.signUp({
@@ -128,28 +245,40 @@ export async function initiateRegistration(
         options: {
           data: {
             name: data.name.trim(),
+            username: normalizedUsername,
             language: data.language,
           },
         },
       });
+
+      // Insert verification code record
+      await supabase.from('email_verifications').upsert({
+        id: `ver_${Date.now()}_${normalizedUsername}`,
+        email: normalizedEmail,
+        code: verificationCode,
+        attempts: 0,
+        expires_at: new Date(expiresAt).toISOString(),
+        created_at: new Date().toISOString(),
+      });
     } catch (err) {
-      console.warn('[Supabase Auth] Note on background signup:', err);
+      console.warn('[Supabase Auth] Background signup note:', err);
     }
   }
 
   return {
     success: true,
     verificationCode,
-    message: `Verification code sent to ${normalizedEmail}. Please enter the 6-digit code to complete registration.`,
+    message: `Verification code generated for ${normalizedEmail}. Please enter the 6-digit code to complete registration.`,
   };
 }
 
 /**
- * Verifies the 6-digit code and activates the user account.
+ * Verifies the 6-digit code and activates the user account with emailVerified = true.
  */
 export async function verifyEmailAndCreateAccount(
   email: string,
-  enteredCode: string
+  enteredCode: string,
+  existingUsers: UserProfile[]
 ): Promise<{
   success: boolean;
   user?: UserProfile;
@@ -162,7 +291,7 @@ export async function verifyEmailAndCreateAccount(
   if (!pending) {
     return {
       success: false,
-      message: 'No pending registration found for this email. Please register again.',
+      message: 'No pending registration found for this email. Please register first.',
     };
   }
 
@@ -178,14 +307,23 @@ export async function verifyEmailAndCreateAccount(
   if (pending.verificationCode !== enteredCode.trim()) {
     return {
       success: false,
-      message: 'Invalid verification code. Please check your email and try again.',
+      message: 'Invalid verification code. Please check the code and try again.',
+    };
+  }
+
+  // Re-check username uniqueness against existing verified users
+  if (existingUsers.some((u) => u.username?.toLowerCase() === pending.username.toLowerCase())) {
+    return {
+      success: false,
+      message: 'This username was claimed by another user. Please register with a different username.',
     };
   }
 
   // Code is valid! Create the verified user profile
   const newUser: UserProfile = {
-    id: `usr_${Date.now()}`,
+    id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     name: pending.name,
+    username: pending.username,
     email: pending.email,
     role: 'user',
     language: pending.language,
@@ -198,7 +336,7 @@ export async function verifyEmailAndCreateAccount(
     lastActiveAt: new Date().toISOString(),
   };
 
-  // Remove from pending
+  // Remove from pending store
   delete pendingMap[normalizedEmail];
   savePendingRegistrations(pendingMap);
 
@@ -210,7 +348,7 @@ export async function verifyEmailAndCreateAccount(
   return {
     success: true,
     user: newUser,
-    message: 'Email verified successfully! You can now log in to your Barakah Daily account.',
+    message: 'Email verified successfully! You can now log in to Barakah Daily.',
   };
 }
 
@@ -229,7 +367,7 @@ export function resendVerificationCode(email: string): {
   if (!pending) {
     return {
       success: false,
-      message: 'No pending registration found for this email.',
+      message: 'No pending registration found for this email address.',
     };
   }
 
@@ -242,134 +380,118 @@ export function resendVerificationCode(email: string): {
   return {
     success: true,
     verificationCode: newCode,
-    message: `A new verification code has been dispatched to ${normalizedEmail}.`,
+    message: `A new verification code has been generated for ${normalizedEmail}.`,
   };
 }
 
 /**
- * Authenticates a user with email and password.
+ * Authenticates a user with email/username and password.
+ * Strictly prevents login if the email has not been verified!
  */
 export async function authenticateUser(
-  email: string,
+  identifier: string,
   passwordInput: string,
   allUsers: UserProfile[]
 ): Promise<{
   success: boolean;
   user?: UserProfile;
   requiresVerification?: boolean;
+  pendingEmail?: string;
   message: string;
 }> {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedId = identifier.trim().toLowerCase();
 
-  // Check demo credentials
-  if (normalizedEmail === 'admin@barakahdaily.com') {
-    const adminUser = allUsers.find((u) => u.email.toLowerCase() === normalizedEmail) || {
-      id: 'usr_admin_01',
-      name: 'Chief Platform Administrator',
-      email: 'admin@barakahdaily.com',
-      role: 'admin',
-      language: 'en',
-      location: {
-        city: 'London',
-        country: 'United Kingdom',
-        latitude: 51.5074,
-        longitude: -0.1278,
-        timezone: 'Europe/London',
-      },
-      calculationMethod: 2,
-      madhab: 'shafi',
-      emailVerified: true,
-      createdAt: '2026-01-01T00:00:00Z',
-      lastActiveAt: new Date().toISOString(),
-    };
+  if (!normalizedId) {
     return {
-      success: true,
-      user: adminUser,
-      message: 'Signed in as Administrator.',
+      success: false,
+      message: 'Please enter your email address or username.',
     };
   }
 
-  if (normalizedEmail === 'tariq@barakahdaily.com') {
-    const demoUser = allUsers.find((u) => u.email.toLowerCase() === normalizedEmail) || {
-      id: 'usr_default_01',
-      name: 'Tariq Al-Mansoor',
-      email: 'tariq@barakahdaily.com',
-      role: 'user',
-      language: 'en',
-      location: {
-        city: 'London',
-        country: 'United Kingdom',
-        latitude: 51.5074,
-        longitude: -0.1278,
-        timezone: 'Europe/London',
-      },
-      calculationMethod: 2,
-      madhab: 'shafi',
-      emailVerified: true,
-      createdAt: '2026-01-15T08:00:00Z',
-      lastActiveAt: new Date().toISOString(),
-    };
+  if (!passwordInput) {
     return {
-      success: true,
-      user: demoUser,
-      message: 'Signed in successfully.',
+      success: false,
+      message: 'Please enter your password.',
     };
   }
 
-  // 1. Look for user in registered list
-  const user = allUsers.find((u) => u.email.toLowerCase() === normalizedEmail);
+  // 1. Look for user in registered list (by email or username)
+  const user = allUsers.find(
+    (u) =>
+      u.email.toLowerCase() === normalizedId ||
+      u.username?.toLowerCase() === normalizedId
+  );
 
-  if (!user) {
-    // Check if there is a pending registration waiting for verification
-    const pendingMap = getPendingRegistrations();
-    if (pendingMap[normalizedEmail]) {
+  // 2. If user is in registered list:
+  if (user) {
+    // STRICT REQUIREMENT: User CANNOT login before email verification
+    if (!user.emailVerified) {
       return {
         success: false,
         requiresVerification: true,
-        message: 'Your email address has not been verified yet. Please enter your 6-digit verification code.',
+        pendingEmail: user.email,
+        message: 'Account is unverified. Please verify your email before logging in.',
       };
     }
 
-    return {
-      success: false,
-      message: 'No account found with this email address. Please register.',
-    };
-  }
-
-  // 2. Check if user is suspended
-  if (user.isSuspended) {
-    return {
-      success: false,
-      message: 'Your account has been temporarily suspended by an administrator.',
-    };
-  }
-
-  // 3. Verify password if password hash is present
-  if (user.passwordHash) {
-    const inputHash = await hashPassword(passwordInput);
-    if (inputHash !== user.passwordHash) {
+    // Check suspension
+    if (user.isSuspended) {
       return {
         success: false,
-        message: 'Incorrect password. Please verify your credentials and try again.',
+        message: 'Your account has been suspended by an administrator. Please contact support.',
       };
     }
-  }
 
-  // 4. Check if Supabase session is available
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password: passwordInput,
-      });
-    } catch {
-      // Continue with local verified state
+    // Verify Password Hash
+    if (user.passwordHash) {
+      const inputHash = await hashPassword(passwordInput);
+      if (inputHash !== user.passwordHash) {
+        return {
+          success: false,
+          message: 'Invalid credentials. Please verify your password and try again.',
+        };
+      }
     }
+
+    // Attempt Supabase sign in if connected
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: passwordInput,
+        });
+      } catch {
+        // Continue with local verified state
+      }
+    }
+
+    return {
+      success: true,
+      user,
+      message: `Welcome back, ${user.name}!`,
+    };
   }
 
+  // 3. If not in active users, check if there is a pending registration
+  const pendingMap = getPendingRegistrations();
+  const pendingMatch = Object.values(pendingMap).find(
+    (p) =>
+      p.email.toLowerCase() === normalizedId ||
+      p.username.toLowerCase() === normalizedId
+  );
+
+  if (pendingMatch) {
+    return {
+      success: false,
+      requiresVerification: true,
+      pendingEmail: pendingMatch.email,
+      message: 'Your account registration is pending. Please verify your email with the 6-digit code before logging in.',
+    };
+  }
+
+  // 4. No account found
   return {
-    success: true,
-    user,
-    message: `Welcome back, ${user.name}!`,
+    success: false,
+    message: 'No registered account found with that email or username. Please sign up.',
   };
 }

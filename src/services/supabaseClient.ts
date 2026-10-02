@@ -73,6 +73,7 @@ export async function syncUserProfileToSupabase(user: UserProfile): Promise<bool
       {
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         role: user.role,
         language: user.language,

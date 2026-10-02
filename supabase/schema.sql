@@ -26,6 +26,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS public.profiles (
     id TEXT PRIMARY KEY, -- Maps to auth.uid() or client UUID
     email TEXT NOT NULL UNIQUE,
+    username TEXT UNIQUE,
     name TEXT NOT NULL,
     role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     language TEXT DEFAULT 'en' CHECK (language IN ('en', 'ar', 'ur', 'hi', 'bn')),
@@ -39,12 +40,62 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     last_active_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure columns exist if table was already created prior to migrations
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'profiles' 
+        AND column_name = 'username'
+    ) THEN
+        ALTER TABLE public.profiles ADD COLUMN username TEXT;
+        UPDATE public.profiles SET username = LOWER(REGEXP_REPLACE(SPLIT_PART(email, '@', 1), '[^a-zA-Z0-9_.-]', '', 'g')) || '_' || SUBSTRING(MD5(id) FROM 1 FOR 4) WHERE username IS NULL OR username = '';
+        ALTER TABLE public.profiles ALTER COLUMN username SET NOT NULL;
+        ALTER TABLE public.profiles ADD CONSTRAINT profiles_username_unique UNIQUE (username);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'profiles' 
+        AND column_name = 'email_verified'
+    ) THEN
+        ALTER TABLE public.profiles ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'profiles' 
+        AND column_name = 'password_hash'
+    ) THEN
+        ALTER TABLE public.profiles ADD COLUMN password_hash TEXT;
+    END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 
 CREATE OR REPLACE TRIGGER trg_profiles_updated_at
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- ------------------------------------------------------------------------------
+-- 1.1 EMAIL VERIFICATIONS (SECURE 6-DIGIT OTP AUDIT & EXPIRATION)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.email_verifications (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    code TEXT NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON public.email_verifications(email);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_expires ON public.email_verifications(expires_at);
 
 -- ------------------------------------------------------------------------------
 -- 2. DAILY PRAYER TRACKING (FARDH & SUNNAH)
@@ -462,6 +513,7 @@ ALTER TABLE public.zakat_calculations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sadaqah_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.charity_goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_verifications ENABLE ROW LEVEL SECURITY;
 
 -- 1. Profiles Policies
 CREATE POLICY "profiles_select_own" ON public.profiles
@@ -470,6 +522,14 @@ CREATE POLICY "profiles_insert_own" ON public.profiles
     FOR INSERT WITH CHECK (auth.uid()::text = id OR id LIKE 'usr_%');
 CREATE POLICY "profiles_update_own" ON public.profiles
     FOR UPDATE USING (auth.uid()::text = id OR id LIKE 'usr_%');
+
+-- 1.1 Email Verifications Policies
+CREATE POLICY "email_verifications_select" ON public.email_verifications
+    FOR SELECT USING (true);
+CREATE POLICY "email_verifications_insert" ON public.email_verifications
+    FOR INSERT WITH CHECK (true);
+CREATE POLICY "email_verifications_update" ON public.email_verifications
+    FOR UPDATE USING (true);
 
 -- 2. Prayer Logs Policies
 CREATE POLICY "prayer_logs_owner_all" ON public.prayer_logs
@@ -582,54 +642,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.family_duas;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.todo_items;
 
 -- ==============================================================================
--- 13. SEED STARTER DATA (OPTIONAL DEMO INITIALIZATION)
+-- 13. SEED STARTER DATA & TEMPLATES (CLEAN PRODUCTION READY)
 -- ==============================================================================
-INSERT INTO public.profiles (id, email, name, role, language, calculation_method, madhab)
-VALUES (
-    'usr_default_01',
-    'tariq@barakahdaily.com',
-    'Tariq Al-Mansoor',
-    'user',
-    'en',
-    2,
-    'shafi'
-)
-ON CONFLICT (id) DO NOTHING;
+-- Profiles and users are registered securely through the web application workflow with unique usernames and verified emails.
 
-INSERT INTO public.profiles (id, email, name, role, language, calculation_method, madhab)
-VALUES (
-    'usr_admin_01',
-    'admin@barakahdaily.com',
-    'Chief Platform Administrator',
-    'admin',
-    'en',
-    2,
-    'shafi'
-)
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.group_khatm_tasks (
-    id,
-    code,
-    title,
-    description,
-    creator_id,
-    creator_name,
-    type,
-    target_date,
-    status,
-    assignments
-)
-VALUES (
-    'tsk_001',
-    'RAMADAN-2026',
-    'Global Ramadan Community Khatm 1447 AH',
-    'Join our collective Khatm al-Qur''an where each participant completes assigned Juz with sincerity and shared du''a.',
-    'usr_default_01',
-    'Tariq Al-Mansoor',
-    'para',
-    '2026-03-29',
-    'active',
-    '[{"id":"asg_1","taskId":"tsk_001","userId":"usr_default_01","userName":"Tariq Al-Mansoor","paraNumber":1,"status":"completed","updatedAt":"2026-09-28T10:00:00Z"}]'::jsonb
-)
-ON CONFLICT (id) DO NOTHING;

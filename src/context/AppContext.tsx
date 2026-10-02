@@ -61,9 +61,10 @@ interface AppContextType {
   setCurrentUser: (user: UserProfile | null) => void;
   loginAs: (email: string, role?: 'user' | 'admin') => void;
   signUpUser: (name: string, email: string, language: Language, location: LocationConfig, method: number, madhab: 'shafi' | 'hanafi') => void;
-  loginWithCredentials: (email: string, password: string) => Promise<{ success: boolean; requiresVerification?: boolean; message: string }>;
+  loginWithCredentials: (identifier: string, password: string) => Promise<{ success: boolean; requiresVerification?: boolean; pendingEmail?: string; message: string }>;
   registerWithVerification: (data: {
     name: string;
+    username: string;
     email: string;
     password: string;
     language: Language;
@@ -205,32 +206,6 @@ interface AppContextType {
   testDatabaseConnection: () => Promise<void>;
 }
 
-const DEFAULT_USER: UserProfile = {
-  id: 'usr_default_01',
-  name: 'Tariq Al-Mansoor',
-  email: 'tariq@barakahdaily.com',
-  role: 'user',
-  language: 'en',
-  location: POPULAR_LOCATIONS[0], // London
-  calculationMethod: 2, // ISNA
-  madhab: 'shafi',
-  createdAt: '2026-01-15T08:00:00Z',
-  lastActiveAt: new Date().toISOString(),
-};
-
-const DEFAULT_ADMIN: UserProfile = {
-  id: 'usr_admin_01',
-  name: 'Ghibli Operator',
-  email: 'admin@barakahdaily.com',
-  role: 'admin',
-  language: 'en',
-  location: POPULAR_LOCATIONS[2], // Makkah
-  calculationMethod: 4, // Umm al-Qura
-  madhab: 'hanafi',
-  createdAt: '2025-11-01T00:00:00Z',
-  lastActiveAt: new Date().toISOString(),
-};
-
 const DHIKR_PRESETS: DhikrPreset[] = [
   { key: 'subhanallah', arabic: 'سُبْحَانَ اللَّهِ', transliteration: 'SubhanAllah', translation: 'Glory be to Allah', defaultTarget: 33, category: 'core' },
   { key: 'alhamdulillah', arabic: 'الْحَمْدُ لِلَّهِ', transliteration: 'Alhamdulillah', translation: 'All praise is due to Allah', defaultTarget: 33, category: 'core' },
@@ -342,13 +317,30 @@ const INITIAL_PLANNED_BLOCKS: PlannedBlock[] = [
 const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Current user & authentication
+  // Current user & authentication (no dummy profiles - starts null unless verified in localStorage)
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('bd_user');
-    return saved ? JSON.parse(saved) : DEFAULT_USER;
+    try {
+      const saved = localStorage.getItem('bd_user');
+      if (!saved) return null;
+      const parsed: UserProfile = JSON.parse(saved);
+      return parsed && parsed.emailVerified ? parsed : null;
+    } catch {
+      return null;
+    }
   });
 
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([DEFAULT_USER, DEFAULT_ADMIN]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('bd_all_users');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('bd_all_users', JSON.stringify(allUsers));
+  }, [allUsers]);
 
   const [language, setLanguage] = useState<Language>(() => {
     return currentUser?.language || 'en';
@@ -873,15 +865,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setLanguage(existing.language);
       showNotification(`Signed in successfully as ${existing.name}`);
     } else {
+      const uname = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_.-]/g, '');
       const newUser: UserProfile = {
         id: `usr_${Date.now()}`,
         name: email.split('@')[0],
+        username: uname || `user_${Date.now().toString().slice(-4)}`,
         email: email,
         role: role,
         language: 'en',
         location: POPULAR_LOCATIONS[0],
         calculationMethod: 2,
         madhab: 'shafi',
+        emailVerified: true,
         createdAt: new Date().toISOString(),
         lastActiveAt: new Date().toISOString(),
       };
@@ -899,15 +894,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     method: number,
     madhab: 'shafi' | 'hanafi'
   ) => {
+    const uname = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_.-]/g, '');
     const newUser: UserProfile = {
       id: `usr_${Date.now()}`,
       name,
+      username: uname || `user_${Date.now().toString().slice(-4)}`,
       email,
       role: 'user',
       language: lang,
       location,
       calculationMethod: method,
       madhab,
+      emailVerified: true,
       createdAt: new Date().toISOString(),
       lastActiveAt: new Date().toISOString(),
     };
@@ -917,8 +915,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showNotification(`Welcome to BarakahDaily, ${name}!`);
   };
 
-  const loginWithCredentials = async (email: string, password: string) => {
-    const res = await authenticateUser(email, password, allUsers);
+  const loginWithCredentials = async (identifier: string, password: string) => {
+    const res = await authenticateUser(identifier, password, allUsers);
     if (res.success && res.user) {
       setCurrentUser(res.user);
       setLanguage(res.user.language);
@@ -929,6 +927,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const registerWithVerification = async (data: {
     name: string;
+    username: string;
     email: string;
     password: string;
     language: Language;
@@ -940,9 +939,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const verifyEmailCode = async (email: string, code: string) => {
-    const res = await verifyEmailAndCreateAccount(email, code);
+    const res = await verifyEmailAndCreateAccount(email, code, allUsers);
     if (res.success && res.user) {
-      setAllUsers((prev) => [...prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()), res.user!]);
+      setAllUsers((prev) => [
+        ...prev.filter(
+          (u) =>
+            u.email.toLowerCase() !== email.toLowerCase() &&
+            u.username.toLowerCase() !== res.user!.username.toLowerCase()
+        ),
+        res.user!,
+      ]);
       showNotification(res.message);
     }
     return { success: res.success, message: res.message };
