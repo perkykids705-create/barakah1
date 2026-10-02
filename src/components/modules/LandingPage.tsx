@@ -80,7 +80,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [verificationDigits, setVerificationDigits] = useState(['', '', '', '', '', '']);
-  const [generatedCodeDisplay, setGeneratedCodeDisplay] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
   const [verificationSuccessMsg, setVerificationSuccessMsg] = useState('');
 
@@ -292,11 +291,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
       }
 
       setVerificationEmail(email.trim().toLowerCase());
-      setGeneratedCodeDisplay(res.verificationCode || '');
       setVerificationDigits(['', '', '', '', '', '']);
       setResendCountdown(60);
       setAuthMode('verify');
-      showNotification('Verification code generated! Please confirm your email.');
+      showNotification(res.message || 'Verification code dispatched to your email.');
     } catch (err: any) {
       setErrorMsg(err?.message || 'Registration failed. Please try again.');
     } finally {
@@ -363,24 +361,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
     document.getElementById(`otp-input-${targetIdx}`)?.focus();
   };
 
-  const handleAutoFillCode = () => {
-    if (!generatedCodeDisplay) return;
-    const chars = generatedCodeDisplay.split('').slice(0, 6);
-    const newDigits = [...verificationDigits];
-    chars.forEach((c, idx) => {
-      newDigits[idx] = c;
-    });
-    setVerificationDigits(newDigits);
-    showNotification('Verification code auto-filled!');
-  };
-
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     if (resendCountdown > 0) return;
-    const res = resendVerificationCode(verificationEmail);
+    const res = await resendVerificationCode(verificationEmail);
     if (res.success) {
-      setGeneratedCodeDisplay(res.verificationCode || '');
       setResendCountdown(60);
-      showNotification('A fresh verification code has been dispatched!');
+      showNotification(res.message || 'A fresh verification code has been dispatched to your email.');
     } else {
       setErrorMsg(res.message);
     }
@@ -1233,62 +1219,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
       ) : authMode === 'verify' ? (
 
         /* ========================================================================= */
-        /* EMAIL VERIFICATION SCREEN - 6-DIGIT OTP WITH SIMULATED DELIVERY PREVIEW    */
+        /* EMAIL VERIFICATION SCREEN - SECURE 6-DIGIT OTP INBOX VERIFICATION         */
         /* ========================================================================= */
         <main className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-[#FAF8F2]">
           <div className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-stone-200 shadow-2xl max-w-lg w-full space-y-7 animate-in fade-in duration-200">
             
             {/* Header */}
             <div className="text-center space-y-2">
-              <div className="inline-flex p-3 rounded-2xl bg-[#E1F2E7] text-[#2E8B4F] mb-1">
+              <div className="inline-flex p-3.5 rounded-2xl bg-[#E1F2E7] text-[#2E8B4F] mb-1 shadow-xs">
                 <Mail className="w-8 h-8" />
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-[#0B2E1C] font-serif tracking-tight">
-                {t('verifyEmailTitle') || 'Verify Your Email'}
+                {t('verifyEmailTitle') || 'Verify Your Email Address'}
               </h2>
               <p className="text-sm sm:text-base text-stone-600 font-medium">
-                {t('verifyEmailSubtitle') || 'We have sent a 6-digit confirmation code to:'}
+                {t('verifyEmailSubtitle') || 'A 6-digit verification code has been sent to your email inbox:'}
               </p>
-              <p className="text-base sm:text-lg font-black text-stone-900 bg-stone-100 py-1.5 px-3 rounded-xl inline-block" dir="ltr">
-                {verificationEmail}
-              </p>
+              <div className="pt-1">
+                <span className="text-base sm:text-lg font-black text-[#0B2E1C] bg-[#E1F2E7]/70 border border-[#2E8B4F]/30 py-1.5 px-4 rounded-xl inline-block" dir="ltr">
+                  {verificationEmail}
+                </span>
+              </div>
             </div>
 
             {/* Error Message */}
             {errorMsg && (
               <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-200 text-red-800 text-sm sm:text-base font-bold flex items-center gap-2">
-                <span>⚠️</span>
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            {/* Simulated Delivery Security Banner */}
-            {generatedCodeDisplay && (
-              <div className="p-4 rounded-2xl bg-amber-50/90 border-2 border-amber-200/80 text-amber-950 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Key className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span className="text-xs font-black uppercase tracking-wider text-amber-800">
-                    Security Verification Code (Simulated Delivery)
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-amber-900 leading-relaxed">
-                  In live production with configured SMTP / Supabase Auth, an email is delivered to your inbox. For testing right now, your security OTP code is:
-                </p>
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-2xl font-black tracking-widest text-[#0B2E1C] font-mono bg-white px-3 py-1 rounded-xl border border-amber-300" dir="ltr">
-                    {generatedCodeDisplay}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAutoFillCode}
-                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Auto-Fill Code</span>
-                  </button>
-                </div>
+            {/* Security Inbox Instruction Card */}
+            <div className="p-4.5 rounded-2xl bg-stone-50 border border-stone-200 text-stone-700 space-y-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4.5 h-4.5 text-[#2E8B4F] shrink-0" />
+                <span className="text-xs font-black uppercase tracking-wider text-stone-900">
+                  Inbox Verification Security
+                </span>
               </div>
-            )}
+              <p className="text-xs font-medium text-stone-600 leading-relaxed">
+                {t('checkEmailInstruction') || 'Please check your email inbox (and Spam/Junk folder) for the 6-digit confirmation code. Enter the code below to activate your account.'}
+              </p>
+            </div>
 
             {/* 6-Digit OTP Form */}
             <form onSubmit={handleVerifySubmit} className="space-y-6">

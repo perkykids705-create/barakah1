@@ -71,9 +71,9 @@ interface AppContextType {
     location: LocationConfig;
     calculationMethod: number;
     madhab: 'shafi' | 'hanafi';
-  }) => Promise<{ success: boolean; verificationCode?: string; message: string }>;
+  }) => Promise<{ success: boolean; message: string }>;
   verifyEmailCode: (email: string, code: string) => Promise<{ success: boolean; message: string }>;
-  resendVerificationCode: (email: string) => { success: boolean; verificationCode?: string; message: string };
+  resendVerificationCode: (email: string) => Promise<{ success: boolean; message: string }>;
   signOut: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   
@@ -954,8 +954,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: res.success, message: res.message };
   };
 
-  const resendCode = (email: string) => {
-    return resendVerificationCode(email);
+  const resendCode = async (email: string) => {
+    return await resendVerificationCode(email);
   };
 
   const signOut = () => {

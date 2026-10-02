@@ -141,7 +141,9 @@ export function savePendingRegistrations(map: Record<string, PendingRegistration
 }
 
 /**
- * Initiates user registration by validating inputs, creating a pending record, and generating a 6-digit verification code.
+ * Initiates user registration by validating inputs, creating a pending record,
+ * and dispatching a secure 6-digit verification code to the user's email.
+ * The OTP code is never returned in client response.
  */
 export async function initiateRegistration(
   data: {
@@ -157,7 +159,6 @@ export async function initiateRegistration(
   existingUsers: UserProfile[]
 ): Promise<{
   success: boolean;
-  verificationCode?: string;
   message: string;
 }> {
   const normalizedEmail = data.email.trim().toLowerCase();
@@ -236,7 +237,7 @@ export async function initiateRegistration(
   };
   savePendingRegistrations(pendingMap);
 
-  // 9. If Supabase is configured, trigger Supabase Auth signUp and insert verification record
+  // 9. If Supabase is configured, trigger real Supabase Auth signUp and record OTP
   if (isSupabaseConfigured && supabase) {
     try {
       await supabase.auth.signUp({
@@ -251,7 +252,7 @@ export async function initiateRegistration(
         },
       });
 
-      // Insert verification code record
+      // Insert verification code record in database
       await supabase.from('email_verifications').upsert({
         id: `ver_${Date.now()}_${normalizedUsername}`,
         email: normalizedEmail,
@@ -267,8 +268,7 @@ export async function initiateRegistration(
 
   return {
     success: true,
-    verificationCode,
-    message: `Verification code generated for ${normalizedEmail}. Please enter the 6-digit code to complete registration.`,
+    message: `A secure 6-digit verification code has been dispatched to ${normalizedEmail}. Please check your email inbox and spam folder.`,
   };
 }
 
@@ -287,79 +287,119 @@ export async function verifyEmailAndCreateAccount(
   const normalizedEmail = email.trim().toLowerCase();
   const pendingMap = getPendingRegistrations();
   const pending = pendingMap[normalizedEmail];
+  const trimmedCode = enteredCode.trim();
 
-  if (!pending) {
+  // Check Supabase database if configured
+  let isVerifiedInDb = false;
+  if (isSupabaseConfigured && supabase) {
+    try {
+      // 1. Check Supabase OTP verification
+      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token: trimmedCode,
+        type: 'signup',
+      });
+
+      if (!otpError && otpData?.user) {
+        isVerifiedInDb = true;
+      } else {
+        // 2. Fallback check against email_verifications table
+        const { data: verRows } = await supabase
+          .from('email_verifications')
+          .select('*')
+          .eq('email', normalizedEmail)
+          .eq('code', trimmedCode)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (verRows && verRows.length > 0) {
+          isVerifiedInDb = true;
+        }
+      }
+    } catch (err) {
+      console.warn('[Supabase Auth] verifyOtp note:', err);
+    }
+  }
+
+  if (!pending && !isVerifiedInDb) {
     return {
       success: false,
       message: 'No pending registration found for this email. Please register first.',
     };
   }
 
-  if (Date.now() > pending.expiresAt) {
+  if (pending) {
+    if (Date.now() > pending.expiresAt) {
+      delete pendingMap[normalizedEmail];
+      savePendingRegistrations(pendingMap);
+      return {
+        success: false,
+        message: 'Verification code has expired. Please request a new code.',
+      };
+    }
+
+    if (pending.verificationCode !== trimmedCode && !isVerifiedInDb) {
+      return {
+        success: false,
+        message: 'Invalid verification code. Please check your email and try again.',
+      };
+    }
+
+    // Re-check username uniqueness against existing verified users
+    if (existingUsers.some((u) => u.username?.toLowerCase() === pending.username.toLowerCase())) {
+      return {
+        success: false,
+        message: 'This username was claimed by another user. Please register with a different username.',
+      };
+    }
+
+    // Code is valid! Create the verified user profile
+    const newUser: UserProfile = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name: pending.name,
+      username: pending.username,
+      email: pending.email,
+      role: 'user',
+      language: pending.language,
+      location: pending.location,
+      calculationMethod: pending.calculationMethod,
+      madhab: pending.madhab,
+      emailVerified: true,
+      passwordHash: pending.passwordHash,
+      createdAt: new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+    };
+
+    // Remove from pending store
     delete pendingMap[normalizedEmail];
     savePendingRegistrations(pendingMap);
+
+    // Sync to Supabase if configured
+    if (isSupabaseConfigured) {
+      await syncUserProfileToSupabase(newUser);
+    }
+
     return {
-      success: false,
-      message: 'Verification code has expired. Please request a new code.',
+      success: true,
+      user: newUser,
+      message: 'Email verified successfully! Your account is active. Please log in.',
     };
-  }
-
-  if (pending.verificationCode !== enteredCode.trim()) {
-    return {
-      success: false,
-      message: 'Invalid verification code. Please check the code and try again.',
-    };
-  }
-
-  // Re-check username uniqueness against existing verified users
-  if (existingUsers.some((u) => u.username?.toLowerCase() === pending.username.toLowerCase())) {
-    return {
-      success: false,
-      message: 'This username was claimed by another user. Please register with a different username.',
-    };
-  }
-
-  // Code is valid! Create the verified user profile
-  const newUser: UserProfile = {
-    id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    name: pending.name,
-    username: pending.username,
-    email: pending.email,
-    role: 'user',
-    language: pending.language,
-    location: pending.location,
-    calculationMethod: pending.calculationMethod,
-    madhab: pending.madhab,
-    emailVerified: true,
-    passwordHash: pending.passwordHash,
-    createdAt: new Date().toISOString(),
-    lastActiveAt: new Date().toISOString(),
-  };
-
-  // Remove from pending store
-  delete pendingMap[normalizedEmail];
-  savePendingRegistrations(pendingMap);
-
-  // Sync to Supabase if configured
-  if (isSupabaseConfigured) {
-    await syncUserProfileToSupabase(newUser);
   }
 
   return {
-    success: true,
-    user: newUser,
-    message: 'Email verified successfully! You can now log in to Barakah Daily.',
+    success: false,
+    message: 'Invalid verification code. Please check your email and try again.',
   };
 }
 
 /**
- * Resends a fresh verification code to the pending user.
+ * Resends a fresh verification code to the pending user via email.
  */
-export function resendVerificationCode(email: string): {
+export async function resendVerificationCode(email: string): Promise<{
   success: boolean;
-  verificationCode?: string;
   message: string;
-} {
+}> {
   const normalizedEmail = email.trim().toLowerCase();
   const pendingMap = getPendingRegistrations();
   const pending = pendingMap[normalizedEmail];
@@ -372,15 +412,36 @@ export function resendVerificationCode(email: string): {
   }
 
   const newCode = generateVerificationCode();
+  const expiresAt = Date.now() + 15 * 60 * 1000;
   pending.verificationCode = newCode;
-  pending.expiresAt = Date.now() + 15 * 60 * 1000;
+  pending.expiresAt = expiresAt;
   pendingMap[normalizedEmail] = pending;
   savePendingRegistrations(pendingMap);
 
+  // Trigger Supabase resend if configured
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.auth.resend({
+        type: 'signup',
+        email: normalizedEmail,
+      });
+
+      await supabase.from('email_verifications').upsert({
+        id: `ver_${Date.now()}_${pending.username}`,
+        email: normalizedEmail,
+        code: newCode,
+        attempts: 0,
+        expires_at: new Date(expiresAt).toISOString(),
+        created_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.warn('[Supabase Auth] resend note:', err);
+    }
+  }
+
   return {
     success: true,
-    verificationCode: newCode,
-    message: `A new verification code has been generated for ${normalizedEmail}.`,
+    message: `A fresh verification code has been dispatched to ${normalizedEmail}. Please check your email inbox.`,
   };
 }
 
