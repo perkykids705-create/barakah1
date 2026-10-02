@@ -446,6 +446,69 @@ export async function resendVerificationCode(email: string): Promise<{
 }
 
 /**
+ * Direct activation fallback for developers, testers, or users encountering external SMTP delivery delays.
+ * Activates the pending account with full database profile sync and sets emailVerified = true.
+ */
+export async function directActivatePendingAccount(
+  email: string,
+  existingUsers: UserProfile[]
+): Promise<{
+  success: boolean;
+  user?: UserProfile;
+  message: string;
+}> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const pendingMap = getPendingRegistrations();
+  const pending = pendingMap[normalizedEmail];
+
+  if (!pending) {
+    return {
+      success: false,
+      message: 'No pending registration record found for this email address.',
+    };
+  }
+
+  // Check username uniqueness against verified users
+  if (existingUsers.some((u) => u.username?.toLowerCase() === pending.username.toLowerCase())) {
+    return {
+      success: false,
+      message: 'This username is already claimed. Please register with a different username.',
+    };
+  }
+
+  const newUser: UserProfile = {
+    id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    name: pending.name,
+    username: pending.username,
+    email: pending.email,
+    role: 'user',
+    language: pending.language,
+    location: pending.location,
+    calculationMethod: pending.calculationMethod,
+    madhab: pending.madhab,
+    emailVerified: true,
+    passwordHash: pending.passwordHash,
+    createdAt: new Date().toISOString(),
+    lastActiveAt: new Date().toISOString(),
+  };
+
+  // Remove from pending store
+  delete pendingMap[normalizedEmail];
+  savePendingRegistrations(pendingMap);
+
+  // Sync to Supabase
+  if (isSupabaseConfigured) {
+    await syncUserProfileToSupabase(newUser);
+  }
+
+  return {
+    success: true,
+    user: newUser,
+    message: 'Account activated successfully! You can now log in.',
+  };
+}
+
+/**
  * Authenticates a user with email/username and password.
  * Strictly prevents login if the email has not been verified!
  */

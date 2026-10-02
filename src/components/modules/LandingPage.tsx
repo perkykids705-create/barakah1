@@ -67,6 +67,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
     registerWithVerification,
     verifyEmailCode,
     resendVerificationCode,
+    directActivateAccount,
     showNotification,
   } = useApp();
   const t = useTranslation(language);
@@ -81,6 +82,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
   const [verificationEmail, setVerificationEmail] = useState('');
   const [verificationDigits, setVerificationDigits] = useState(['', '', '', '', '', '']);
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
   const [verificationSuccessMsg, setVerificationSuccessMsg] = useState('');
 
   // Interactive demo preview anchor
@@ -369,6 +371,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
       showNotification(res.message || 'A fresh verification code has been dispatched to your email.');
     } else {
       setErrorMsg(res.message);
+    }
+  };
+
+  const handleDirectActivate = async () => {
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      const res = await directActivateAccount(verificationEmail);
+      if (!res.success) {
+        setErrorMsg(res.message);
+        return;
+      }
+      setVerificationSuccessMsg(res.message);
+      setLoginIdentifier(username || verificationEmail);
+      setLoginPassword(password);
+      setAuthMode('login');
+      showNotification('Account activated successfully! Please sign in.');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Activation failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1332,6 +1355,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
               >
                 Change Email / Back
               </button>
+            </div>
+
+            {/* Email Deliverability & Direct Activation Troubleshooting */}
+            <div className="pt-2 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setShowTroubleshoot((prev) => !prev)}
+                className="w-full text-center text-xs font-bold text-stone-500 hover:text-stone-800 transition-colors cursor-pointer py-1 flex items-center justify-center gap-1.5"
+              >
+                <span>{showTroubleshoot ? '▲ Hide Email Assistance' : '▼ Didn\'t receive email? (Troubleshoot & Direct Activate)'}</span>
+              </button>
+
+              {showTroubleshoot && (
+                <div className="mt-3 p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-3 text-left animate-in fade-in duration-200">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                      <span>💡</span>
+                      <span>Email Delivery Tips:</span>
+                    </p>
+                    <ul className="text-xs text-amber-900 list-disc list-inside space-y-1 pl-1">
+                      <li>Check your <strong>Spam / Junk</strong> or <strong>Promotions</strong> tab.</li>
+                      <li>Supabase free tier default mailer has a limit of 3 emails/hour. Custom SMTP (Resend / Gmail) in Supabase Dashboard provides unlimited instant deliverability.</li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-2 border-t border-amber-200/70">
+                    <p className="text-xs text-amber-900 font-medium mb-2">
+                      If email delivery is delayed or throttled, you can activate your account directly:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDirectActivate}
+                      disabled={isSubmitting}
+                      className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Activate & Confirm My Account Directly</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>

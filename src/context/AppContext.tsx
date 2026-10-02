@@ -51,6 +51,7 @@ import {
   initiateRegistration,
   verifyEmailAndCreateAccount,
   resendVerificationCode,
+  directActivatePendingAccount,
   authenticateUser,
 } from '../services/authService';
 
@@ -74,6 +75,7 @@ interface AppContextType {
   }) => Promise<{ success: boolean; message: string }>;
   verifyEmailCode: (email: string, code: string) => Promise<{ success: boolean; message: string }>;
   resendVerificationCode: (email: string) => Promise<{ success: boolean; message: string }>;
+  directActivateAccount: (email: string) => Promise<{ success: boolean; message: string }>;
   signOut: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   
@@ -958,6 +960,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return await resendVerificationCode(email);
   };
 
+  const directActivateAccount = async (email: string) => {
+    const res = await directActivatePendingAccount(email, allUsers);
+    if (res.success && res.user) {
+      setAllUsers((prev) => [
+        ...prev.filter(
+          (u) =>
+            u.email.toLowerCase() !== email.toLowerCase() &&
+            u.username.toLowerCase() !== res.user!.username.toLowerCase()
+        ),
+        res.user!,
+      ]);
+      showNotification(res.message);
+    }
+    return { success: res.success, message: res.message };
+  };
+
   const signOut = () => {
     setCurrentUser(null);
     localStorage.removeItem('bd_user');
@@ -1785,6 +1803,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         registerWithVerification,
         verifyEmailCode,
         resendVerificationCode: resendCode,
+        directActivateAccount,
         activeNotification,
         showNotification,
         dismissNotification,
