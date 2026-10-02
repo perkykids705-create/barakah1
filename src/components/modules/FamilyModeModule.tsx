@@ -54,6 +54,72 @@ export const FamilyModeModule: React.FC = () => {
   const t = useTranslation(language);
   const rtl = isRTL(language);
 
+  // Localization helpers for members, badges, relationships, age groups, and Du'as
+  const getLocalizedMemberName = (member: FamilyMember): string => {
+    if (member.id === 'fam_1') return t('defaultMember1Name');
+    if (member.id === 'fam_2') return t('defaultMember2Name');
+    if (member.id === 'fam_3') return t('defaultMember3Name');
+    return member.name;
+  };
+
+  const getLocalizedRelationship = (rel: string): string => {
+    if (rel === 'child') return t('relChild');
+    if (rel === 'spouse') return t('relSpouse');
+    if (rel === 'parent') return t('relParent');
+    return rel;
+  };
+
+  const getLocalizedAgeGroup = (age: string): string => {
+    if (age === 'child') return t('ageChild');
+    if (age === 'teen') return t('ageTeen');
+    if (age === 'adult') return t('ageAdult');
+    return age;
+  };
+
+  const getLocalizedHifzSurah = (surah?: string): string => {
+    if (!surah) return '';
+    if (surah.includes('Amma') || surah.includes('30')) {
+      return language === 'ur' ? 'پارہ 30 (عم)' : language === 'ar' ? 'جزء ٣٠ (عم)' : language === 'hi' ? 'पारा 30 (अम्मा)' : language === 'bn' ? '৩০তম পারা (আম্মা)' : surah;
+    }
+    if (surah.includes('Mulk')) {
+      return language === 'ur' ? 'سورۃ الملک' : language === 'ar' ? 'سورة الملك' : language === 'hi' ? 'सूरह अल-मुल्क' : language === 'bn' ? 'সূরা আল-মুলক' : surah;
+    }
+    if (surah.includes('Rahman')) {
+      return language === 'ur' ? 'سورۃ الرحمن' : language === 'ar' ? 'سورة الرحمن' : language === 'hi' ? 'सूरह अर-रहमान' : language === 'bn' ? 'সূরা আর-রহমান' : surah;
+    }
+    if (surah.includes('Baqarah')) {
+      return language === 'ur' ? 'سورۃ البقرۃ' : language === 'ar' ? 'سورة البقرة' : language === 'hi' ? 'सूरह अल-बक़रा' : language === 'bn' ? 'সূরা আল-বাকারা' : surah;
+    }
+    return surah;
+  };
+
+  const getLocalizedBadgeTitle = (title: string): string => {
+    if (title === 'Fajr Champion') return t('badgeFajrChampion');
+    if (title === 'Wudu Master') return t('badgeWuduMaster');
+    if (title === "Qur'an Hafizah Journey") return t('badgeQuranHafiz');
+    if (title === 'Kindness Star') return t('badgeKindnessStar');
+    if (title === 'Home Pillar') return t('badgeHomePillar');
+    if (title === 'Welcome to Family Barakah') return t('badgeWelcome');
+    return title;
+  };
+
+  const getLocalizedBadgeDesc = (desc: string): string => {
+    if (desc === 'Woke up for Fajr with father') return t('badgeFajrChampionDesc');
+    if (desc === 'Learned Sunnah steps of Wudu') return t('badgeWuduMasterDesc');
+    if (desc === 'Completed Juz 29 revision') return t('badgeQuranHafizDesc');
+    if (desc === 'Helped prepare evening dinner and Iftar') return t('badgeKindnessStarDesc');
+    if (desc === 'Led family daily Hadith reading') return t('badgeHomePillarDesc');
+    if (desc === 'Joined household worship circle') return t('badgeWelcomeDesc');
+    return desc;
+  };
+
+  const getLocalizedDuaText = (dua: { id: string; text: string }): string => {
+    if (dua.id === 'dua_1') return t('defaultDua1Text');
+    if (dua.id === 'dua_2') return t('defaultDua2Text');
+    if (dua.id === 'dua_3') return t('defaultDua3Text');
+    return dua.text;
+  };
+
   // Active sub-tab inside Family Module
   const [activeTab, setActiveTab] = useState<'profiles' | 'jamaah' | 'badges' | 'duas'>('profiles');
 
@@ -75,9 +141,6 @@ export const FamilyModeModule: React.FC = () => {
   // New Du'a Form
   const [newDuaText, setNewDuaText] = useState('');
   const [newDuaAuthor, setNewDuaAuthor] = useState('');
-
-  // Custom pages input per member ID
-  const [customPagesInputs, setCustomPagesInputs] = useState<Record<string, number>>({});
 
   const prayersList: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -168,10 +231,10 @@ export const FamilyModeModule: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-[#8A6715]">
-                {t('activeMode')}: <strong className="text-[#16241A]">{activeMember.name}</strong>
+                {t('activeMode')}: <strong className="text-[#16241A]">{getLocalizedMemberName(activeMember)}</strong>
               </p>
               <p className="text-xs text-stone-600 font-medium">
-                Currently tracking prayers and deeds for this household profile.
+                {t('activeMemberBannerDesc')}
               </p>
             </div>
           </div>
@@ -179,7 +242,7 @@ export const FamilyModeModule: React.FC = () => {
             onClick={() => setActiveFamilyMemberId(null)}
             className="px-4 py-2 rounded-xl bg-white border border-[#C89B2E]/40 hover:bg-[#FAF0D8] text-xs font-extrabold text-[#8A6715] transition-colors cursor-pointer self-start sm:self-auto"
           >
-            Switch to Primary ({currentUser?.name})
+            {t('switchToPrimary')} ({currentUser?.name})
           </button>
         </div>
       ) : null}
@@ -191,7 +254,7 @@ export const FamilyModeModule: React.FC = () => {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">Profiles</span>
+            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">{t('profilesStatLabel')}</span>
             <p className="text-xl font-black text-[#16241A] tabular-nums">{familyMembers.length}</p>
           </div>
         </div>
@@ -201,7 +264,7 @@ export const FamilyModeModule: React.FC = () => {
             <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
           </div>
           <div>
-            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">Barakah Stars</span>
+            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">{t('barakahStarsStatLabel')}</span>
             <p className="text-xl font-black text-amber-600 tabular-nums">{totalHouseholdStars}</p>
           </div>
         </div>
@@ -211,8 +274,11 @@ export const FamilyModeModule: React.FC = () => {
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">Qur'an Pages</span>
-            <p className="text-xl font-black text-teal-700 tabular-nums">{totalHouseholdPages} pgs</p>
+            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">{t('quranPagesStatLabel')}</span>
+            <p className="text-xl font-black text-teal-700 tabular-nums flex items-baseline gap-1" dir={rtl ? 'rtl' : 'ltr'}>
+              <span>{totalHouseholdPages}</span>
+              <span className="text-xs font-bold text-teal-600">{t('pagesShort')}</span>
+            </p>
           </div>
         </div>
 
@@ -221,8 +287,10 @@ export const FamilyModeModule: React.FC = () => {
             <HeartHandshake className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">Jama'ah Today</span>
-            <p className="text-xl font-black text-rose-600 tabular-nums">{totalJamaahPrayersCount} / 5</p>
+            <span className="text-xxs font-extrabold uppercase tracking-wider text-stone-500">{t('jamaahTodayStatLabel')}</span>
+            <p className="text-xl font-black text-rose-600 tabular-nums" dir="ltr">
+              {totalJamaahPrayersCount} / 5
+            </p>
           </div>
         </div>
       </div>
@@ -303,13 +371,13 @@ export const FamilyModeModule: React.FC = () => {
                         {member.name.charAt(0)}
                       </div>
                       <div>
-                        <h4 className="text-lg font-extrabold text-[#16241A]">{member.name}</h4>
+                        <h4 className="text-lg font-extrabold text-[#16241A]">{getLocalizedMemberName(member)}</h4>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 capitalize">
-                            {member.relationship}
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600">
+                            {getLocalizedRelationship(member.relationship)}
                           </span>
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-500 capitalize">
-                            {member.ageGroup}
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-stone-100 text-stone-500">
+                            {getLocalizedAgeGroup(member.ageGroup)}
                           </span>
                         </div>
                       </div>
@@ -370,9 +438,13 @@ export const FamilyModeModule: React.FC = () => {
                     <div className="flex items-center justify-between text-xs font-bold">
                       <span className="text-stone-700 flex items-center gap-1.5">
                         <BookOpen className="w-3.5 h-3.5 text-teal-700" />
-                        <span>{member.hifzSurah || 'Juz 30 (Amma)'}</span>
+                        <span>{getLocalizedHifzSurah(member.hifzSurah) || 'Juz 30 (Amma)'}</span>
                       </span>
-                      <span className="text-teal-800 font-extrabold">{member.quranProgress || 0} / {targetPages} pgs ({quranPercent}%)</span>
+                      <span className="text-teal-800 font-extrabold flex items-center gap-1" dir={rtl ? 'rtl' : 'ltr'}>
+                        <span dir="ltr">{member.quranProgress || 0} / {targetPages}</span>
+                        <span>{t('pagesShort')}</span>
+                        <span dir="ltr">({quranPercent}%)</span>
+                      </span>
                     </div>
 
                     <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
@@ -388,15 +460,15 @@ export const FamilyModeModule: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => logFamilyQuranProgress(member.id, 1)}
-                          className="px-2 py-1 rounded-lg bg-white border border-stone-200 hover:border-teal-600 text-teal-800 text-xs font-black transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-white border border-stone-200 hover:border-teal-600 text-teal-800 text-xs font-black transition-colors cursor-pointer"
                         >
-                          +1 pg
+                          +1 {t('pageUnit')}
                         </button>
                         <button
                           onClick={() => logFamilyQuranProgress(member.id, 5)}
-                          className="px-2 py-1 rounded-lg bg-white border border-stone-200 hover:border-teal-600 text-teal-800 text-xs font-black transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-white border border-stone-200 hover:border-teal-600 text-teal-800 text-xs font-black transition-colors cursor-pointer"
                         >
-                          +5 pgs
+                          +5 {t('pageUnit')}
                         </button>
                       </div>
                     </div>
@@ -406,7 +478,7 @@ export const FamilyModeModule: React.FC = () => {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-extrabold text-[#5D6B5A] uppercase tracking-wider">{t('prayerCheckoff')}</p>
-                      <span className="text-xxs font-bold text-stone-400">Tap to toggle on-time / late</span>
+                      <span className="text-xxs font-bold text-stone-400">{t('prayerTapHint')}</span>
                     </div>
 
                     <div className="grid grid-cols-5 gap-2">
@@ -448,15 +520,15 @@ export const FamilyModeModule: React.FC = () => {
                 {/* Earned Badges Row */}
                 {member.badges && member.badges.length > 0 && (
                   <div className="pt-4 border-t border-stone-100 mt-4 flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xxs font-extrabold uppercase text-stone-400 mr-1">Badges:</span>
+                    <span className="text-xxs font-extrabold uppercase text-stone-400 mr-1">{t('badgesLabel')}</span>
                     {member.badges.slice(0, 3).map((b) => (
                       <span
                         key={b.id}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xxs font-bold bg-amber-50 text-amber-900 border border-amber-200"
-                        title={b.description}
+                        title={getLocalizedBadgeDesc(b.description)}
                       >
                         <Trophy className="w-3 h-3 text-amber-600" />
-                        <span>{b.title}</span>
+                        <span>{getLocalizedBadgeTitle(b.title)}</span>
                       </span>
                     ))}
                   </div>
@@ -512,7 +584,7 @@ export const FamilyModeModule: React.FC = () => {
                         {isDone ? '✓' : '+'}
                       </span>
                       <span className="text-xxs font-extrabold mt-1 text-[#2E8B4F]">
-                        {isDone ? 'Jama\'ah Logged' : 'Tap to Mark'}
+                        {isDone ? t('jamaahLogged') : t('tapToMark')}
                       </span>
                     </button>
                   );
@@ -538,16 +610,16 @@ export const FamilyModeModule: React.FC = () => {
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{familySunnahDone ? 'Completed Today! ✓' : 'Mark Completed'}</span>
+                <span>{familySunnahDone ? t('completedTodayCheck') : t('markCompleted')}</span>
               </button>
             </div>
 
             <div>
               <h4 className="text-base sm:text-lg font-black text-[#16241A]">
-                "Smile upon greeting family members & recite Ayat al-Kursi together after Maghrib"
+                "{t('dailySunnahChallengeTask')}"
               </h4>
               <p className="text-xs sm:text-sm text-stone-600 italic mt-1 font-medium">
-                «The best of you are those who are best to their families, and I am the best to my family.» (Sunan al-Tirmidhi)
+                {t('dailySunnahChallengeHadith')}
               </p>
             </div>
           </div>
@@ -562,14 +634,14 @@ export const FamilyModeModule: React.FC = () => {
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-[#16241A]">{t('familyTabsBadges')}</h3>
                 <p className="text-xs sm:text-sm text-stone-600 font-medium">
-                  Inspire your kids and teens by acknowledging their daily Islamic manners and prayers.
+                  {t('barakahStarsSubtitle')}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold text-amber-800 bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
                   <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                  <span>Total Household Stars: {totalHouseholdStars}</span>
+                  <span>{t('totalHouseholdStarsLabel')}: {totalHouseholdStars}</span>
                 </span>
               </div>
             </div>
@@ -580,8 +652,8 @@ export const FamilyModeModule: React.FC = () => {
                 <div key={m.id} className="p-5 rounded-2xl bg-stone-50 border border-stone-200 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-base font-extrabold text-[#16241A]">{m.name}</h4>
-                      <span className="text-xxs font-bold text-stone-500 uppercase">{m.relationship}</span>
+                      <h4 className="text-base font-extrabold text-[#16241A]">{getLocalizedMemberName(m)}</h4>
+                      <span className="text-xxs font-bold text-stone-500 uppercase">{getLocalizedRelationship(m.relationship)}</span>
                     </div>
 
                     <button
@@ -599,28 +671,28 @@ export const FamilyModeModule: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xl font-black text-amber-800 tabular-nums">{m.barakahStars || 0}</p>
-                      <span className="text-xxs font-bold text-stone-400">Stars Earned</span>
+                      <span className="text-xxs font-bold text-stone-400">{t('starsEarnedLabel')}</span>
                     </div>
                   </div>
 
                   {/* Badges List */}
                   <div className="space-y-2 pt-2 border-t border-stone-200/60">
-                    <span className="text-xxs font-extrabold uppercase text-stone-500">Badges & Achievements:</span>
+                    <span className="text-xxs font-extrabold uppercase text-stone-500">{t('badgesAndAchievements')}</span>
                     {m.badges && m.badges.length > 0 ? (
                       <div className="space-y-1.5">
                         {m.badges.map((b) => (
                           <div key={b.id} className="p-2.5 rounded-xl bg-white border border-stone-200 text-xs">
                             <p className="font-extrabold text-[#16241A] flex items-center gap-1.5">
                               <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                              <span>{b.title}</span>
+                              <span>{getLocalizedBadgeTitle(b.title)}</span>
                             </p>
-                            <p className="text-stone-500 text-xxs mt-0.5">{b.description}</p>
-                            <span className="text-stone-400 text-xxs block mt-0.5">{b.awardedAt}</span>
+                            <p className="text-stone-500 text-xxs mt-0.5">{getLocalizedBadgeDesc(b.description)}</p>
+                            <span className="text-stone-400 text-xxs block mt-0.5" dir="ltr">{b.awardedAt}</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xxs text-stone-400 italic">No badges awarded yet</p>
+                      <p className="text-xxs text-stone-400 italic">{t('noBadgesYet')}</p>
                     )}
                   </div>
                 </div>
@@ -638,7 +710,7 @@ export const FamilyModeModule: React.FC = () => {
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-[#16241A]">{t('familyTabsDuas')}</h3>
                 <p className="text-xs sm:text-sm text-stone-600 font-medium">
-                  Heartfelt collective supplications for our home, children, parents, and loved ones.
+                  {t('familyDuasSubtitle')}
                 </p>
               </div>
             </div>
@@ -658,7 +730,7 @@ export const FamilyModeModule: React.FC = () => {
                   type="text"
                   value={newDuaAuthor}
                   onChange={(e) => setNewDuaAuthor(e.target.value)}
-                  placeholder="Requested by (e.g. Tariq, Yusuf, Maryam)..."
+                  placeholder={t('requestedByPlaceholder')}
                   className="w-full sm:w-64 px-3.5 py-2 rounded-xl border border-stone-200 text-xs font-bold outline-none bg-white"
                 />
                 <button
@@ -683,7 +755,7 @@ export const FamilyModeModule: React.FC = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-stone-500">
-                      By <strong className="text-stone-800">{dua.addedBy}</strong> · {dua.createdAt}
+                      By <strong className="text-stone-800">{dua.addedBy}</strong> · <span dir="ltr">{dua.createdAt}</span>
                     </span>
 
                     <div className="flex items-center gap-1.5">
@@ -701,7 +773,7 @@ export const FamilyModeModule: React.FC = () => {
                       <button
                         onClick={() => deleteFamilyDua(dua.id)}
                         className="p-1 rounded-lg text-stone-400 hover:text-red-500 cursor-pointer"
-                        title="Remove Du'a"
+                        title={t('removeDuaTooltip')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -709,7 +781,7 @@ export const FamilyModeModule: React.FC = () => {
                   </div>
 
                   <p className="text-sm font-bold text-[#16241A] leading-relaxed whitespace-pre-wrap">
-                    "{dua.text}"
+                    "{getLocalizedDuaText(dua)}"
                   </p>
                 </div>
               ))}
@@ -920,7 +992,7 @@ export const FamilyModeModule: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-lg font-black text-[#16241A]">{t('awardStarBtn')}</h4>
-                <p className="text-xs text-stone-500 font-bold">{starAwardMember.name}</p>
+                <p className="text-xs text-stone-500 font-bold">{getLocalizedMemberName(starAwardMember)}</p>
               </div>
             </div>
 
@@ -987,7 +1059,7 @@ export const FamilyModeModule: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-lg font-black text-stone-900">{t('confirmDeleteProfileTitle')}</h4>
-                <p className="text-xs text-stone-500 font-bold">{memberToDelete.name}</p>
+                <p className="text-xs text-stone-500 font-bold">{getLocalizedMemberName(memberToDelete)}</p>
               </div>
             </div>
 

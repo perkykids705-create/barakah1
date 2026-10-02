@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation, isRTL, getFontFamilyClass } from '../../i18n/translations';
 import { BrandMark } from '../common/BrandMark';
@@ -34,6 +34,12 @@ import {
   Mail,
   User,
   ArrowUpRight,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Key,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -41,12 +47,29 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) => {
-  const { language, setLanguage, loginAs, signUpUser, showNotification } = useApp();
+  const {
+    language,
+    setLanguage,
+    loginAs,
+    signUpUser,
+    loginWithCredentials,
+    registerWithVerification,
+    verifyEmailCode,
+    resendVerificationCode,
+    showNotification,
+  } = useApp();
   const t = useTranslation(language);
   const rtl = isRTL(language);
   const fontClass = getFontFamilyClass(language);
 
-  const [authMode, setAuthMode] = useState<'landing' | 'login' | 'signup'>('landing');
+  const [authMode, setAuthMode] = useState<'landing' | 'login' | 'signup' | 'verify'>('landing');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationDigits, setVerificationDigits] = useState(['', '', '', '', '', '']);
+  const [generatedCodeDisplay, setGeneratedCodeDisplay] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [verificationSuccessMsg, setVerificationSuccessMsg] = useState('');
 
   // Interactive demo preview anchor
   const [demoAnchor, setDemoAnchor] = useState<'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha'>('Dhuhr');
@@ -147,6 +170,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
   const [madhab, setMadhab] = useState<'shafi' | 'hanafi'>('shafi');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Password Strength Evaluation
+  const passwordStrength = useMemo(() => {
+    if (!password) return { score: 0, text: '', color: '' };
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    if (score <= 1) return { score: 1, text: 'Weak (min 8 chars)', color: 'bg-red-500' };
+    if (score === 2) return { score: 2, text: 'Fair (add uppercase/numbers)', color: 'bg-amber-500' };
+    if (score === 3) return { score: 3, text: 'Good', color: 'bg-emerald-500' };
+    return { score: 4, text: 'Strong & Secure', color: 'bg-emerald-600' };
+  }, [password]);
+
+  // Resend Countdown Timer
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCountdown]);
+
   // Login inputs
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -159,29 +206,164 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
     { code: 'bn', label: 'Bengali', native: 'বাংলা' },
   ];
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
       setErrorMsg('Please enter your full name and email address.');
       return;
     }
-    if (password && confirmPassword && password !== confirmPassword) {
+    if (!password) {
+      setErrorMsg('Please enter a password.');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters long for security.');
+      return;
+    }
+    if (password !== confirmPassword) {
       setErrorMsg('Passwords do not match. Please verify.');
       return;
     }
-    signUpUser(name.trim(), email.trim(), selectedLang, selectedLocation, calcMethod, madhab);
-    onSuccessfulAuth();
+
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      const res = await registerWithVerification({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        language: selectedLang,
+        location: selectedLocation,
+        calculationMethod: calcMethod,
+        madhab,
+      });
+
+      if (!res.success) {
+        setErrorMsg(res.message);
+        return;
+      }
+
+      setVerificationEmail(email.trim());
+      setGeneratedCodeDisplay(res.verificationCode || '');
+      setVerificationDigits(['', '', '', '', '', '']);
+      setResendCountdown(60);
+      setAuthMode('verify');
+      showNotification('Verification code generated! Please confirm your email.');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = verificationDigits.join('').trim();
+    if (code.length !== 6) {
+      setErrorMsg('Please enter the complete 6-digit confirmation code.');
+      return;
+    }
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      const res = await verifyEmailCode(verificationEmail, code);
+      if (!res.success) {
+        setErrorMsg(res.message);
+        return;
+      }
+      setVerificationSuccessMsg('Email verified successfully! Your account is active. Please sign in below.');
+      setLoginEmail(verificationEmail);
+      setLoginPassword(password);
+      setAuthMode('login');
+      showNotification('Account verified successfully! Please sign in.');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Verification failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDigitChange = (index: number, val: string) => {
+    if (!/^\d*$/.test(val)) return;
+    const newDigits = [...verificationDigits];
+    newDigits[index] = val.slice(-1);
+    setVerificationDigits(newDigits);
+
+    if (val && index < 5) {
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !verificationDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-input-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handlePasteOtp = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const newDigits = [...verificationDigits];
+    for (let i = 0; i < 6; i++) {
+      newDigits[i] = pasted[i] || '';
+    }
+    setVerificationDigits(newDigits);
+    const targetIdx = Math.min(5, pasted.length);
+    document.getElementById(`otp-input-${targetIdx}`)?.focus();
+  };
+
+  const handleAutoFillCode = () => {
+    if (!generatedCodeDisplay) return;
+    const chars = generatedCodeDisplay.split('').slice(0, 6);
+    const newDigits = [...verificationDigits];
+    chars.forEach((c, idx) => {
+      newDigits[idx] = c;
+    });
+    setVerificationDigits(newDigits);
+    showNotification('Verification code auto-filled!');
+  };
+
+  const handleResendCode = () => {
+    if (resendCountdown > 0) return;
+    const res = resendVerificationCode(verificationEmail);
+    if (res.success) {
+      setGeneratedCodeDisplay(res.verificationCode || '');
+      setResendCountdown(60);
+      showNotification('A fresh verification code has been dispatched!');
+    } else {
+      setErrorMsg(res.message);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim()) {
       setErrorMsg('Please enter your email address to sign in.');
       return;
     }
-    const role = loginEmail.toLowerCase().includes('admin') ? 'admin' : 'user';
-    loginAs(loginEmail.trim(), role);
-    onSuccessfulAuth();
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      const res = await loginWithCredentials(loginEmail.trim(), loginPassword);
+      if (!res.success) {
+        if (res.requiresVerification) {
+          setVerificationEmail(loginEmail.trim());
+          setAuthMode('verify');
+          setErrorMsg(res.message);
+        } else {
+          setErrorMsg(res.message);
+        }
+        return;
+      }
+      onSuccessfulAuth();
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Sign in failed. Please verify credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleQuickDemo = (role: 'user' | 'admin') => {
@@ -640,28 +822,54 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm sm:text-base font-bold text-stone-900 mb-2">
-                    {t('passwordLabel') || 'Password'}
+                    {t('passwordLabel') || 'Password'} <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-stone-300 text-stone-900 text-base sm:text-lg font-bold placeholder-stone-400 outline-none focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 transition-all"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3.5 pr-12 rounded-2xl border-2 border-stone-300 text-stone-900 text-base sm:text-lg font-bold placeholder-stone-400 outline-none focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 transition-all"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {password && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-1.5 h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                          style={{ width: `${(passwordStrength.score / 4) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xxs font-bold text-stone-500 block">
+                        Strength: {passwordStrength.text}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm sm:text-base font-bold text-stone-900 mb-2">
-                    {t('confirmPasswordLabel') || 'Confirm Password'}
+                    {t('confirmPasswordLabel') || 'Confirm Password'} <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-stone-300 text-stone-900 text-base sm:text-lg font-bold placeholder-stone-400 outline-none focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 transition-all"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-4 py-3.5 pr-12 rounded-2xl border-2 border-stone-300 text-stone-900 text-base sm:text-lg font-bold placeholder-stone-400 outline-none focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 transition-all"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -864,10 +1072,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-4.5 px-6 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] text-[#FBBF24] font-black text-base sm:text-lg tracking-wide transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-3 border border-[#C89B2E]/40"
+                disabled={isSubmitting}
+                className="w-full py-4.5 px-6 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] disabled:opacity-60 text-[#FBBF24] font-black text-base sm:text-lg tracking-wide transition-all shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-3 border border-[#C89B2E]/40"
               >
-                <span>{t('completeOnboardingBtn') || 'Bismillah — Begin My Journey'}</span>
-                <ArrowRight className={`w-5 h-5 text-[#FBBF24] shrink-0 transition-transform ${rtl ? 'rotate-180' : ''}`} />
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>Processing Registration...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t('completeOnboardingBtn') || 'Register & Send Verification Code'}</span>
+                    <ArrowRight className={`w-5 h-5 text-[#FBBF24] shrink-0 transition-transform ${rtl ? 'rotate-180' : ''}`} />
+                  </>
+                )}
               </button>
 
             </form>
@@ -882,6 +1100,139 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                 className="font-black text-[#2E8B4F] hover:underline cursor-pointer"
               >
                 {t('signIn') || 'Sign In here'}
+              </button>
+            </div>
+
+          </div>
+        </main>
+      ) : authMode === 'verify' ? (
+
+        /* ========================================================================= */
+        /* EMAIL VERIFICATION SCREEN - 6-DIGIT OTP WITH SIMULATED DELIVERY PREVIEW    */
+        /* ========================================================================= */
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-[#FAF8F2]">
+          <div className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-stone-200 shadow-2xl max-w-lg w-full space-y-7 animate-in fade-in duration-200">
+            
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex p-3 rounded-2xl bg-[#E1F2E7] text-[#2E8B4F] mb-1">
+                <Mail className="w-8 h-8" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-[#0B2E1C] font-serif tracking-tight">
+                {t('verifyEmailTitle') || 'Verify Your Email'}
+              </h2>
+              <p className="text-sm sm:text-base text-stone-600 font-medium">
+                {t('verifyEmailSubtitle') || 'We have sent a 6-digit confirmation code to:'}
+              </p>
+              <p className="text-base sm:text-lg font-black text-stone-900 bg-stone-100 py-1.5 px-3 rounded-xl inline-block" dir="ltr">
+                {verificationEmail}
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {errorMsg && (
+              <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-200 text-red-800 text-sm sm:text-base font-bold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* Simulated Delivery Security Banner */}
+            {generatedCodeDisplay && (
+              <div className="p-4 rounded-2xl bg-amber-50/90 border-2 border-amber-200/80 text-amber-950 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-800">
+                    Security Verification Code (Simulated Delivery)
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-amber-900 leading-relaxed">
+                  In live production with configured SMTP / Supabase Auth, an email is delivered to your inbox. For testing right now, your security OTP code is:
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-2xl font-black tracking-widest text-[#0B2E1C] font-mono bg-white px-3 py-1 rounded-xl border border-amber-300" dir="ltr">
+                    {generatedCodeDisplay}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAutoFillCode}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Auto-Fill Code</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 6-Digit OTP Form */}
+            <form onSubmit={handleVerifySubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm sm:text-base font-bold text-stone-900 mb-3 text-center">
+                  {t('enter6DigitCode') || 'Enter 6-Digit Confirmation Code'}
+                </label>
+                
+                <div className="flex items-center justify-center gap-2 sm:gap-3" dir="ltr" onPaste={handlePasteOtp}>
+                  {verificationDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-input-${idx}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                      className="w-11 sm:w-13 h-13 sm:h-15 text-center text-xl sm:text-2xl font-black rounded-2xl border-2 border-stone-300 text-[#0B2E1C] bg-stone-50 focus:bg-white focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 outline-none transition-all"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || verificationDigits.join('').length !== 6}
+                className="w-full py-4 rounded-2xl bg-[#2E8B4F] hover:bg-[#257341] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>{t('verifyAndComplete') || 'Verify & Activate Account'}</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Resend & Back controls */}
+            <div className="pt-4 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm font-semibold text-stone-600">
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resendCountdown > 0}
+                className="text-[#2E8B4F] hover:underline font-black disabled:text-stone-400 disabled:no-underline cursor-pointer flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${resendCountdown > 0 ? '' : 'text-[#2E8B4F]'}`} />
+                <span>
+                  {resendCountdown > 0
+                    ? `Resend Code in ${resendCountdown}s`
+                    : 'Resend Verification Code'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signup');
+                  setErrorMsg('');
+                }}
+                className="text-stone-500 hover:text-stone-800 hover:underline cursor-pointer"
+              >
+                Change Email / Back
               </button>
             </div>
 
@@ -907,6 +1258,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                 {t('loginSubtitle') || 'Sign in to access your synchronized prayer routines and Quran progress.'}
               </p>
             </div>
+
+            {verificationSuccessMsg && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-900 text-sm sm:text-base font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{verificationSuccessMsg}</span>
+              </div>
+            )}
 
             {errorMsg && (
               <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-200 text-red-800 text-sm sm:text-base font-bold flex items-center gap-2">
@@ -938,22 +1296,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-stone-300 text-stone-900 text-base sm:text-lg font-bold placeholder-stone-400 outline-none focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 transition-all"
+                    className="w-full px-4 py-3.5 pr-12 rounded-2xl border-2 border-stone-300 text-stone-900 text-base sm:text-lg font-bold placeholder-stone-400 outline-none focus:border-[#2E8B4F] focus:ring-4 focus:ring-[#2E8B4F]/10 transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-4 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] text-[#FBBF24] font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:shadow-2xl cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full py-4 rounded-2xl bg-[#0B2E1C] hover:bg-[#123D28] disabled:opacity-60 text-[#FBBF24] font-black text-base sm:text-lg uppercase tracking-wider transition-all shadow-xl hover:shadow-2xl cursor-pointer flex items-center justify-center gap-2"
               >
-                {t('signIn') || 'Sign In to Account'}
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  <span>{t('signIn') || 'Sign In to Account'}</span>
+                )}
               </button>
             </form>
+
+            <div className="text-center text-xs sm:text-sm font-semibold text-stone-500 space-y-2">
+              <p>
+                Don't have an account yet?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setErrorMsg('');
+                  }}
+                  className="font-black text-[#2E8B4F] hover:underline cursor-pointer"
+                >
+                  Create one here
+                </button>
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setVerificationEmail(loginEmail);
+                  setAuthMode('verify');
+                  setErrorMsg('');
+                }}
+                className="text-stone-400 hover:text-stone-700 hover:underline cursor-pointer block mx-auto text-xxs font-bold"
+              >
+                Have a pending verification code? Enter it here
+              </button>
+            </div>
 
             {/* Quick 1-Click Demo Accounts */}
             <div className="pt-6 border-t-2 border-stone-100 space-y-3">

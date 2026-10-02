@@ -36,6 +36,23 @@ import {
 } from '../types';
 import { fetchPrayerTimes, getNextPrayerInfo, NextPrayerInfo, POPULAR_LOCATIONS } from '../services/prayerService';
 import { SURAHS_LIST } from '../services/quranData';
+import {
+  isSupabaseConfigured,
+  testSupabaseConnection,
+  syncUserProfileToSupabase,
+  syncPrayerLogToSupabase,
+  syncFamilyMemberToSupabase,
+  deleteFamilyMemberFromSupabase,
+  syncFamilyDuaToSupabase,
+  deleteFamilyDuaFromSupabase,
+  syncGroupKhatmTaskToSupabase,
+} from '../services/supabaseClient';
+import {
+  initiateRegistration,
+  verifyEmailAndCreateAccount,
+  resendVerificationCode,
+  authenticateUser,
+} from '../services/authService';
 
 interface AppContextType {
   // User & Auth
@@ -44,6 +61,18 @@ interface AppContextType {
   setCurrentUser: (user: UserProfile | null) => void;
   loginAs: (email: string, role?: 'user' | 'admin') => void;
   signUpUser: (name: string, email: string, language: Language, location: LocationConfig, method: number, madhab: 'shafi' | 'hanafi') => void;
+  loginWithCredentials: (email: string, password: string) => Promise<{ success: boolean; requiresVerification?: boolean; message: string }>;
+  registerWithVerification: (data: {
+    name: string;
+    email: string;
+    password: string;
+    language: Language;
+    location: LocationConfig;
+    calculationMethod: number;
+    madhab: 'shafi' | 'hanafi';
+  }) => Promise<{ success: boolean; verificationCode?: string; message: string }>;
+  verifyEmailCode: (email: string, code: string) => Promise<{ success: boolean; message: string }>;
+  resendVerificationCode: (email: string) => { success: boolean; verificationCode?: string; message: string };
   signOut: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   
@@ -168,6 +197,12 @@ interface AppContextType {
   activeNotification: string | null;
   showNotification: (msg: string) => void;
   dismissNotification: () => void;
+
+  // Supabase Database Sync & Security
+  isSupabaseConfigured: boolean;
+  supabaseConnected: boolean;
+  supabaseStatusMessage: string;
+  testDatabaseConnection: () => Promise<void>;
 }
 
 const DEFAULT_USER: UserProfile = {
@@ -737,8 +772,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     { id: 'aud_2', adminEmail: 'admin@barakahdaily.com', actionType: 'EXTEND_DEADLINE', targetTable: 'khatm_tasks', targetId: 'tsk_001', timestamp: '2026-09-24T14:30:00Z', notes: 'Operator extended task target date to 2026-10-10' },
   ]);
 
-  // Notifications
+  // In-App Notifications
   const [activeNotification, setActiveNotification] = useState<string | null>(null);
+
+  // Supabase Database Connection State
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
+  const [supabaseStatusMessage, setSupabaseStatusMessage] = useState<string>(
+    isSupabaseConfigured
+      ? 'Connecting to Supabase Cloud...'
+      : 'Offline Mode: Local Storage active. Provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable cloud sync.'
+  );
+
+  const testDatabaseConnection = async () => {
+    const res = await testSupabaseConnection();
+    setSupabaseConnected(res.connected);
+    setSupabaseStatusMessage(res.message);
+    showNotification(res.message);
+  };
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      testSupabaseConnection().then((res) => {
+        setSupabaseConnected(res.connected);
+        setSupabaseStatusMessage(res.message);
+      });
+    }
+  }, []);
 
   const showNotification = (msg: string) => {
     setActiveNotification(msg);
@@ -858,6 +917,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showNotification(`Welcome to BarakahDaily, ${name}!`);
   };
 
+  const loginWithCredentials = async (email: string, password: string) => {
+    const res = await authenticateUser(email, password, allUsers);
+    if (res.success && res.user) {
+      setCurrentUser(res.user);
+      setLanguage(res.user.language);
+      showNotification(res.message);
+    }
+    return res;
+  };
+
+  const registerWithVerification = async (data: {
+    name: string;
+    email: string;
+    password: string;
+    language: Language;
+    location: LocationConfig;
+    calculationMethod: number;
+    madhab: 'shafi' | 'hanafi';
+  }) => {
+    return await initiateRegistration(data, allUsers);
+  };
+
+  const verifyEmailCode = async (email: string, code: string) => {
+    const res = await verifyEmailAndCreateAccount(email, code);
+    if (res.success && res.user) {
+      setAllUsers((prev) => [...prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()), res.user!]);
+      showNotification(res.message);
+    }
+    return { success: res.success, message: res.message };
+  };
+
+  const resendCode = (email: string) => {
+    return resendVerificationCode(email);
+  };
+
   const signOut = () => {
     setCurrentUser(null);
     localStorage.removeItem('bd_user');
@@ -872,6 +966,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (updates.language) {
       setLanguage(updates.language);
     }
+    syncUserProfileToSupabase(updated);
     showNotification('Profile updated successfully.');
   };
 
@@ -887,6 +982,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       timestamp: new Date().toISOString(),
     };
     setPrayerLogs((prev) => [...prev.filter((l) => !(l.date === today && l.prayer === prayer && l.profileId === newLog.profileId)), newLog]);
+    syncPrayerLogToSupabase(newLog.profileId, today, prayer, status);
     showNotification(`${prayer} recorded as ${status}`);
   };
 
@@ -1394,18 +1490,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       todayPrayers: {},
     };
     setFamilyMembers((prev) => [...prev, newMember]);
+    syncFamilyMemberToSupabase(newMember);
     showNotification(`Family profile for ${name} created.`);
   };
 
   const updateFamilyMember = (id: string, updates: Partial<FamilyMember>) => {
-    setFamilyMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
-    );
+    setFamilyMembers((prev) => {
+      const updatedList = prev.map((m) => (m.id === id ? { ...m, ...updates } : m));
+      const target = updatedList.find((m) => m.id === id);
+      if (target) syncFamilyMemberToSupabase(target);
+      return updatedList;
+    });
     showNotification('Family profile updated successfully.');
   };
 
   const deleteFamilyMember = (id: string) => {
     setFamilyMembers((prev) => prev.filter((m) => m.id !== id));
+    deleteFamilyMemberFromSupabase(id);
     if (activeFamilyMemberId === id) {
       setActiveFamilyMemberId(null);
     }
@@ -1475,17 +1576,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: new Date().toISOString().split('T')[0],
     };
     setFamilyDuas((prev) => [newDua, ...prev]);
+    if (currentUser?.id) syncFamilyDuaToSupabase(newDua, currentUser.id);
     showNotification('New household supplication added to family prayer board.');
   };
 
   const toggleFamilyDuaAnswered = (id: string) => {
     setFamilyDuas((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, answered: !d.answered } : d))
+      prev.map((d) => {
+        if (d.id === id) {
+          const updated = { ...d, answered: !d.answered };
+          if (currentUser?.id) syncFamilyDuaToSupabase(updated, currentUser.id);
+          return updated;
+        }
+        return d;
+      })
     );
   };
 
   const deleteFamilyDua = (id: string) => {
     setFamilyDuas((prev) => prev.filter((d) => d.id !== id));
+    deleteFamilyDuaFromSupabase(id);
     showNotification('Du\'a removed from list.');
   };
 
@@ -1665,9 +1775,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         promoteUserRole,
         deleteUser,
         adminDeleteGroupTask,
+        loginWithCredentials,
+        registerWithVerification,
+        verifyEmailCode,
+        resendVerificationCode: resendCode,
         activeNotification,
         showNotification,
         dismissNotification,
+        isSupabaseConfigured,
+        supabaseConnected,
+        supabaseStatusMessage,
+        testDatabaseConnection,
       }}
     >
       {children}

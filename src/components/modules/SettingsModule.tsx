@@ -18,6 +18,14 @@ import {
   LogOut,
   Save,
   Compass,
+  Database,
+  Lock,
+  Server,
+  Key,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  FileCode,
 } from 'lucide-react';
 
 export const SettingsModule: React.FC = () => {
@@ -29,7 +37,23 @@ export const SettingsModule: React.FC = () => {
     signOut,
     loginAs,
     showNotification,
+    isSupabaseConfigured,
+    supabaseConnected,
+    supabaseStatusMessage,
+    testDatabaseConnection,
   } = useApp();
+
+  const [testingDb, setTestingDb] = useState(false);
+  const [showSchemaGuide, setShowSchemaGuide] = useState(false);
+
+  const handleTestDatabase = async () => {
+    setTestingDb(true);
+    try {
+      await testDatabaseConnection();
+    } finally {
+      setTestingDb(false);
+    }
+  };
 
   const t = useTranslation(language);
   const rtl = isRTL(language);
@@ -423,6 +447,84 @@ export const SettingsModule: React.FC = () => {
             <span>{t('saveSettingsBtn')}</span>
           </button>
         </form>
+
+        {/* Supabase Production Database & Cloud Security Section */}
+        <div className="pt-6 border-t border-stone-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#2E8B4F] flex items-center justify-center font-black shrink-0">
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-extrabold text-[#16241A] flex items-center gap-2">
+                  <span>Supabase Production Database</span>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xxs font-black uppercase tracking-wider ${
+                    supabaseConnected
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      : isSupabaseConfigured
+                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                      : 'bg-stone-100 text-stone-700 border border-stone-300'
+                  }`}>
+                    {supabaseConnected ? '● Cloud Connected' : isSupabaseConfigured ? '○ Checking...' : '○ Local / Offline Mode'}
+                  </span>
+                </h4>
+                <p className="text-xs text-stone-500 font-semibold mt-0.5">
+                  PostgreSQL backend with automated Row Level Security (RLS) & environment key isolation.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleTestDatabase}
+              disabled={testingDb}
+              className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-extrabold text-xs flex items-center gap-2 transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${testingDb ? 'animate-spin' : ''}`} />
+              <span>{testingDb ? 'Testing Connection...' : 'Test Connection'}</span>
+            </button>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-600 space-y-2">
+            <div className="flex items-start gap-2">
+              <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-stone-900">Environment & Key Security:</strong>
+                <p className="text-stone-500 mt-0.5">
+                  Database keys are stored securely in environment variables (<code className="bg-stone-200/70 px-1 py-0.5 rounded text-stone-800">.env</code> & container secrets). Public anon key is safe for client-side queries protected by PostgreSQL Row Level Security (RLS). Secret service keys are never bundled in client code.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-stone-200 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xxs font-bold text-stone-400">
+                Status: {supabaseStatusMessage}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowSchemaGuide(!showSchemaGuide)}
+                className="text-xxs font-black text-[#2E8B4F] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <FileCode className="w-3 h-3" />
+                <span>{showSchemaGuide ? 'Hide Schema Guide' : 'View Supabase Setup SQL & Tables (7 Tables)'}</span>
+              </button>
+            </div>
+
+            {showSchemaGuide && (
+              <div className="mt-3 p-3.5 bg-stone-900 text-stone-100 rounded-xl font-mono text-xxs overflow-x-auto space-y-2">
+                <p className="text-emerald-400 font-bold">
+                  -- Complete schema available in: supabase/schema.sql
+                </p>
+                <p className="text-stone-300">
+                  Tables configured: profiles, prayer_logs, family_members, family_duas, group_khatm_tasks, quran_reading_logs, zakat_records.
+                </p>
+                <p className="text-stone-400">
+                  To deploy: Run schema.sql in Supabase Dashboard &gt; SQL Editor &gt; New Query.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Accountability & Privacy Notice (PRD §4.6) */}
         <div className="pt-5 border-t border-stone-100 text-xs sm:text-sm text-[#5D6B5A] space-y-2">

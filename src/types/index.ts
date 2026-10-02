@@ -38,6 +38,8 @@ export interface UserProfile {
   createdAt: string;
   lastActiveAt: string;
   isSuspended?: boolean;
+  emailVerified?: boolean;
+  passwordHash?: string;
 }
 
 export interface FamilyBadge {
