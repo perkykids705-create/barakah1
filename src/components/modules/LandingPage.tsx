@@ -292,11 +292,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSuccessfulAuth }) =>
         return;
       }
 
-      setVerificationEmail(email.trim().toLowerCase());
-      setVerificationDigits(['', '', '', '', '', '']);
-      setResendCountdown(60);
-      setAuthMode('verify');
-      showNotification(res.message || 'Verification code dispatched to your email.');
+      showNotification(res.message || 'Welcome to Barakah Daily! Account created successfully.');
     } catch (err: any) {
       setErrorMsg(err?.message || 'Registration failed. Please try again.');
     } finally {

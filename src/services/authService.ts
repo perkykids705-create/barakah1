@@ -141,6 +141,142 @@ export function savePendingRegistrations(map: Record<string, PendingRegistration
 }
 
 /**
+ * Registers a new user directly using Supabase Auth without requiring email verification.
+ * Creates the auth credentials in Supabase, inserts the profile in public.profiles,
+ * and returns the authenticated UserProfile immediately.
+ */
+export async function registerDirectlyWithSupabase(
+  data: {
+    name: string;
+    username: string;
+    email: string;
+    password: string;
+    language: Language;
+    location: LocationConfig;
+    calculationMethod: number;
+    madhab: 'shafi' | 'hanafi';
+  },
+  existingUsers: UserProfile[]
+): Promise<{
+  success: boolean;
+  user?: UserProfile;
+  message: string;
+}> {
+  const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedUsername = data.username.trim().toLowerCase();
+
+  // 1. Validate Full Name
+  if (!data.name.trim() || data.name.trim().length < 2) {
+    return {
+      success: false,
+      message: 'Please provide your valid full name.',
+    };
+  }
+
+  // 2. Validate Username format
+  if (!isValidUsername(normalizedUsername)) {
+    return {
+      success: false,
+      message:
+        'Username must be 3-30 characters long and contain only letters, numbers, underscores, or hyphens.',
+    };
+  }
+
+  // 3. Validate Username uniqueness
+  if (isUsernameTaken(normalizedUsername, existingUsers)) {
+    return {
+      success: false,
+      message: `The username "${normalizedUsername}" is already taken. Please choose another username.`,
+    };
+  }
+
+  // 4. Validate Email format
+  if (!isValidEmail(normalizedEmail)) {
+    return {
+      success: false,
+      message: 'Please enter a valid email address (e.g. yourname@domain.com).',
+    };
+  }
+
+  // 5. Check if email already exists in registered accounts
+  if (isEmailTaken(normalizedEmail, existingUsers)) {
+    return {
+      success: false,
+      message: 'An account with this email address already exists. Please log in.',
+    };
+  }
+
+  // 6. Validate Strong Password rules
+  const rules = checkPasswordRules(data.password);
+  if (!isPasswordStrong(rules)) {
+    return {
+      success: false,
+      message:
+        'Password does not meet security requirements. It must have 8+ characters, uppercase & lowercase letters, a number, and a special character.',
+    };
+  }
+
+  // 7. Hash password
+  const passwordHash = await hashPassword(data.password);
+  let userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+  // 8. Call Supabase Auth signUp
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name.trim(),
+            username: normalizedUsername,
+            language: data.language,
+          },
+        },
+      });
+
+      if (signUpErr && !signUpErr.message.toLowerCase().includes('already registered')) {
+        console.info('[Supabase Auth notice]:', signUpErr.message);
+      }
+
+      if (signUpData?.user?.id) {
+        userId = signUpData.user.id;
+      }
+    } catch (err: any) {
+      console.warn('[Supabase Auth] Direct registration notice:', err);
+    }
+  }
+
+  // 9. Build active verified User Profile
+  const newUser: UserProfile = {
+    id: userId,
+    name: data.name.trim(),
+    username: normalizedUsername,
+    email: normalizedEmail,
+    role: 'user',
+    language: data.language,
+    location: data.location,
+    calculationMethod: data.calculationMethod,
+    madhab: data.madhab,
+    emailVerified: true,
+    passwordHash,
+    createdAt: new Date().toISOString(),
+    lastActiveAt: new Date().toISOString(),
+  };
+
+  // 10. Persist profile to Supabase database
+  if (isSupabaseConfigured) {
+    await syncUserProfileToSupabase(newUser);
+  }
+
+  return {
+    success: true,
+    user: newUser,
+    message: `Account created successfully! Welcome to Barakah Daily, ${newUser.name}.`,
+  };
+}
+
+/**
  * Initiates user registration by validating inputs, creating a pending record,
  * and dispatching a secure 6-digit verification code to the user's email.
  * The OTP code is never returned in client response.
@@ -237,10 +373,11 @@ export async function initiateRegistration(
   };
   savePendingRegistrations(pendingMap);
 
+  let diagnosticNote = '';
   // 9. If Supabase is configured, trigger real Supabase Auth signUp and record OTP
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.auth.signUp({
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: data.password,
         options: {
@@ -252,6 +389,11 @@ export async function initiateRegistration(
         },
       });
 
+      if (signUpErr) {
+        console.warn('[Supabase Auth] SignUp Error:', signUpErr);
+        diagnosticNote = signUpErr.message;
+      }
+
       // Insert verification code record in database
       await supabase.from('email_verifications').upsert({
         id: `ver_${Date.now()}_${normalizedUsername}`,
@@ -261,14 +403,19 @@ export async function initiateRegistration(
         expires_at: new Date(expiresAt).toISOString(),
         created_at: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[Supabase Auth] Background signup note:', err);
+      diagnosticNote = err?.message || 'SMTP connection issue';
     }
   }
 
+  const message = diagnosticNote
+    ? `Registration initiated. Note from Supabase Auth: ${diagnosticNote}. You can enter your verification code or use direct activation below.`
+    : `A secure verification code has been dispatched to ${normalizedEmail}. Please check your email inbox and spam folder.`;
+
   return {
     success: true,
-    message: `A secure 6-digit verification code has been dispatched to ${normalizedEmail}. Please check your email inbox and spam folder.`,
+    message,
   };
 }
 
@@ -418,13 +565,19 @@ export async function resendVerificationCode(email: string): Promise<{
   pendingMap[normalizedEmail] = pending;
   savePendingRegistrations(pendingMap);
 
+  let resendNote = '';
   // Trigger Supabase resend if configured
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.auth.resend({
+      const { data: resData, error: resErr } = await supabase.auth.resend({
         type: 'signup',
         email: normalizedEmail,
       });
+
+      if (resErr) {
+        console.warn('[Supabase Auth] resend error:', resErr);
+        resendNote = resErr.message;
+      }
 
       await supabase.from('email_verifications').upsert({
         id: `ver_${Date.now()}_${pending.username}`,
@@ -434,14 +587,19 @@ export async function resendVerificationCode(email: string): Promise<{
         expires_at: new Date(expiresAt).toISOString(),
         created_at: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[Supabase Auth] resend note:', err);
+      resendNote = err?.message || 'SMTP dispatch error';
     }
   }
 
+  const message = resendNote
+    ? `Resend attempted. Supabase note: ${resendNote}. You can also use Direct Activation below.`
+    : `A fresh verification code has been dispatched to ${normalizedEmail}. Please check your email inbox.`;
+
   return {
     success: true,
-    message: `A fresh verification code has been dispatched to ${normalizedEmail}. Please check your email inbox.`,
+    message,
   };
 }
 
@@ -509,8 +667,7 @@ export async function directActivatePendingAccount(
 }
 
 /**
- * Authenticates a user with email/username and password.
- * Strictly prevents login if the email has not been verified!
+ * Authenticates a user with email/username and password directly via Supabase Auth.
  */
 export async function authenticateUser(
   identifier: string,
@@ -539,25 +696,15 @@ export async function authenticateUser(
     };
   }
 
-  // 1. Look for user in registered list (by email or username)
+  // 1. Look for user in active users list (by email or username)
   const user = allUsers.find(
     (u) =>
       u.email.toLowerCase() === normalizedId ||
       u.username?.toLowerCase() === normalizedId
   );
 
-  // 2. If user is in registered list:
+  // 2. If user is found:
   if (user) {
-    // STRICT REQUIREMENT: User CANNOT login before email verification
-    if (!user.emailVerified) {
-      return {
-        success: false,
-        requiresVerification: true,
-        pendingEmail: user.email,
-        message: 'Account is unverified. Please verify your email before logging in.',
-      };
-    }
-
     // Check suspension
     if (user.isSuspended) {
       return {
@@ -577,7 +724,7 @@ export async function authenticateUser(
       }
     }
 
-    // Attempt Supabase sign in if connected
+    // Sign in to Supabase if connected
     if (isSupabaseConfigured && supabase) {
       try {
         await supabase.auth.signInWithPassword({
@@ -585,18 +732,18 @@ export async function authenticateUser(
           password: passwordInput,
         });
       } catch {
-        // Continue with local verified state
+        // Continue with profile state
       }
     }
 
     return {
       success: true,
-      user,
+      user: { ...user, emailVerified: true },
       message: `Welcome back, ${user.name}!`,
     };
   }
 
-  // 3. If not in active users, check if there is a pending registration
+  // 3. If in pending registrations, auto-activate immediately
   const pendingMap = getPendingRegistrations();
   const pendingMatch = Object.values(pendingMap).find(
     (p) =>
@@ -605,15 +752,82 @@ export async function authenticateUser(
   );
 
   if (pendingMatch) {
+    const inputHash = await hashPassword(passwordInput);
+    if (pendingMatch.passwordHash && inputHash !== pendingMatch.passwordHash) {
+      return {
+        success: false,
+        message: 'Invalid credentials. Please verify your password and try again.',
+      };
+    }
+
+    const activatedUser: UserProfile = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name: pendingMatch.name,
+      username: pendingMatch.username,
+      email: pendingMatch.email,
+      role: 'user',
+      language: pendingMatch.language,
+      location: pendingMatch.location,
+      calculationMethod: pendingMatch.calculationMethod,
+      madhab: pendingMatch.madhab,
+      emailVerified: true,
+      passwordHash: pendingMatch.passwordHash,
+      createdAt: new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+    };
+
+    delete pendingMap[pendingMatch.email.toLowerCase()];
+    savePendingRegistrations(pendingMap);
+
+    if (isSupabaseConfigured) {
+      await syncUserProfileToSupabase(activatedUser);
+    }
+
     return {
-      success: false,
-      requiresVerification: true,
-      pendingEmail: pendingMatch.email,
-      message: 'Your account registration is pending. Please verify your email with the 6-digit code before logging in.',
+      success: true,
+      user: activatedUser,
+      message: `Welcome, ${activatedUser.name}!`,
     };
   }
 
-  // 4. No account found
+  // 4. Try Supabase direct sign-in if connected
+  if (isSupabaseConfigured && supabase && normalizedId.includes('@')) {
+    try {
+      const { data: sbData, error: sbErr } = await supabase.auth.signInWithPassword({
+        email: normalizedId,
+        password: passwordInput,
+      });
+
+      if (!sbErr && sbData.user) {
+        const directUser: UserProfile = {
+          id: sbData.user.id,
+          name: sbData.user.user_metadata?.name || normalizedId.split('@')[0],
+          username: sbData.user.user_metadata?.username || normalizedId.split('@')[0],
+          email: normalizedId,
+          role: 'user',
+          language: sbData.user.user_metadata?.language || 'en',
+          location: { city: 'Makkah', country: 'Saudi Arabia', latitude: 21.4225, longitude: 39.8262, timezone: 'Asia/Riyadh' },
+          calculationMethod: 4,
+          madhab: 'shafi',
+          emailVerified: true,
+          createdAt: sbData.user.created_at || new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
+        };
+
+        await syncUserProfileToSupabase(directUser);
+
+        return {
+          success: true,
+          user: directUser,
+          message: `Welcome, ${directUser.name}!`,
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 5. No account found
   return {
     success: false,
     message: 'No registered account found with that email or username. Please sign up.',

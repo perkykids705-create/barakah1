@@ -49,6 +49,7 @@ import {
 } from '../services/supabaseClient';
 import {
   initiateRegistration,
+  registerDirectlyWithSupabase,
   verifyEmailAndCreateAccount,
   resendVerificationCode,
   directActivatePendingAccount,
@@ -937,7 +938,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     calculationMethod: number;
     madhab: 'shafi' | 'hanafi';
   }) => {
-    return await initiateRegistration(data, allUsers);
+    const res = await registerDirectlyWithSupabase(data, allUsers);
+    if (res.success && res.user) {
+      setAllUsers((prev) => [
+        ...prev.filter(
+          (u) =>
+            u.email.toLowerCase() !== res.user!.email.toLowerCase() &&
+            u.username.toLowerCase() !== res.user!.username.toLowerCase()
+        ),
+        res.user!,
+      ]);
+      setCurrentUser(res.user);
+      setLanguage(res.user.language);
+      showNotification(res.message);
+    }
+    return { success: res.success, message: res.message };
   };
 
   const verifyEmailCode = async (email: string, code: string) => {
